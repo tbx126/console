@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-zinc-50 text-zinc-900 antialiased;
+  }
+
+  .dark body,
+  body.dark,
+  :root.dark body {
+    @apply bg-zinc-900 text-zinc-100;
+  }
+}
+
+/* 辅助动画类，用于错落效果 */
+.animate-delay-100 { animation-delay: 100ms; }
+.animate-delay-200 { animation-delay: 200ms; }
+.animate-delay-300 { animation-delay: 300ms; }
+.animate-delay-400 { animation-delay: 400ms; }
+
+/* 尊重用户的减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 隐藏滚动条 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Markdown 深色模式增强 */
+.dark .prose {
+  --tw-prose-body: theme('colors.slate.300');
+  --tw-prose-headings: theme('colors.slate.100');
+  --tw-prose-links: theme('colors.violet.400');
+  --tw-prose-bold: theme('colors.slate.100');
+  --tw-prose-quotes: theme('colors.slate.400');
+  --tw-prose-code: theme('colors.violet.300');
+}
+
+/* 移除 prose 中 pre 的默认背景 */
+.prose pre {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* 代码块滚动条样式 */
+.prose pre::-webkit-scrollbar {
+  height: 6px;
+}
+.prose pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+.prose pre::-webkit-scrollbar-thumb {
+  background: theme('colors.zinc.600');
+  border-radius: 3px;
+}
+.prose pre::-webkit-scrollbar-thumb:hover {
+  background: theme('colors.zinc.500');
+}
+
+/* KaTeX 数学公式样式增强 */
+.katex {
+  font-size: 1.1em;
+}
+
+/* 块级公式居中显示 */
+.katex-display {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: theme('colors.slate.50');
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.dark .katex-display {
+  background: theme('colors.slate.800');
+}
+
+/* 行内公式样式 */
+.katex-inline {
+  padding: 0 0.2em;
+}
+
+/* Mermaid 图表样式 */
+.mermaid-container svg {
+  max-width: 100%;
+  height: auto;
+}
