@@ -1,12 +1,41 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Trash2, Plus, Image, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { Send, Trash2, Plus, Image, PanelLeftClose, PanelLeft, PanelRightClose, PanelRight } from 'lucide-react';
 import { ChatInterface } from '../components/ai/ChatInterface';
 import { Button } from '../components/ui/Button';
 import ConversationSidebar from '../components/ai/ConversationSidebar';
 import ModelSelector from '../components/ai/ModelSelector';
 import DataConfirmModal from '../components/ai/DataConfirmModal';
+import ParameterPanel from '../components/ai/ParameterPanel';
 import aiApi from '../services/aiApi';
 import toast from 'react-hot-toast';
+
+const DEFAULT_SYSTEM_PROMPT = `你是一个友好的 AI 助手，可以和用户自然地聊天。
+
+格式要求：
+- 使用 Markdown 格式回复
+- 数学公式使用 LaTeX 语法：行内公式用 $...$ 或 \\(...\\)，块级公式用 $$...$$ 或 \\[...\\]
+- 不要用反引号 \` 包裹数学公式，必须用 $ 符号
+- 代码块使用 \`\`\`language 格式
+
+当用户在对话中提到可以记录的信息时（如消费、收入、航班、投资等），请在回复末尾附上 JSON 数据，格式如下：
+
+支持的类型：
+- expense: {"data_type": "expense", "data": {"category": "分类", "amount": 金额, "merchant": "商家", "date": "YYYY-MM-DD", "notes": "备注"}}
+- income: {"data_type": "income", "data": {"source": "来源", "amount": 金额, "date": "YYYY-MM-DD", "type": "类型"}}
+- flight: {"data_type": "flight", "data": {"airline": "航空公司", "flight_number": "航班号", "origin": "出发地", "destination": "目的地", "date": "YYYY-MM-DD", "travel_class": "舱位"}}
+- investment: {"data_type": "investment", "data": {"symbol": "代码", "quantity": 数量, "purchase_price": 价格, "date": "YYYY-MM-DD"}}
+
+注意：
+- 只有当用户明确提到具体的消费、收入、航班或投资信息时才附加 JSON
+- 普通聊天不需要附加任何 JSON
+- 先用自然语言回复，JSON 放在最后`;
+
+const DEFAULT_PARAMS = {
+  temperature: 0.7,
+  top_p: 1.0,
+  max_tokens: 8192,
+  system_prompt: DEFAULT_SYSTEM_PROMPT
+};
 
 const AIAssistantPage = () => {
   // Sidebar state
@@ -30,6 +59,10 @@ const AIAssistantPage = () => {
   // Data confirm modal state
   const [showDataModal, setShowDataModal] = useState(false);
   const [pendingData, setPendingData] = useState(null);
+
+  // Parameter panel state
+  const [paramPanelOpen, setParamPanelOpen] = useState(true);
+  const [chatParams, setChatParams] = useState(DEFAULT_PARAMS);
 
   useEffect(() => {
     loadInitialData();
@@ -106,7 +139,13 @@ const AIAssistantPage = () => {
           setCurrentConvId(remaining[0].id);
           setMessages(remaining[0].messages || []);
         } else {
-          setCurrentConvId(null);
+          // 如果没有剩余对话，自动创建一个新对话
+          const newConv = await aiApi.createConversation({
+            title: 'New Conversation',
+            messages: []
+          });
+          setConversations([newConv]);
+          setCurrentConvId(newConv.id);
           setMessages([]);
         }
       }
@@ -168,7 +207,8 @@ const AIAssistantPage = () => {
         const response = await aiApi.sendVisionMessage(
           inputMessage || 'What is in this image?',
           imageBase64,
-          messages
+          messages,
+          chatParams
         );
         fullContent = response.message;
         setMessages([...newMessages, { ...assistantMessage, content: fullContent }]);
@@ -186,7 +226,8 @@ const AIAssistantPage = () => {
               };
               return updated;
             });
-          }
+          },
+          chatParams
         );
       }
 
@@ -363,7 +404,8 @@ const AIAssistantPage = () => {
             };
             return updated;
           });
-        }
+        },
+        chatParams
       );
 
       // 保存对话
@@ -379,14 +421,14 @@ const AIAssistantPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, isLoading, currentConvId]);
+  }, [messages, isLoading, currentConvId, chatParams]);
 
   const handleEditMessage = useCallback((content) => {
     setInputMessage(content);
   }, []);
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex">
+    <div className="h-[calc(100vh-4rem)] flex relative">
       {/* Sidebar */}
       {sidebarOpen && (
         <ConversationSidebar
@@ -406,12 +448,13 @@ const AIAssistantPage = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 hover:bg-zinc-100 rounded-xl transition-colors"
+                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl transition-colors"
+                title={sidebarOpen ? 'Hide conversations' : 'Show conversations'}
               >
                 {sidebarOpen ? (
-                  <PanelLeftClose className="h-5 w-5 text-zinc-600" />
+                  <PanelLeftClose className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
                 ) : (
-                  <PanelLeft className="h-5 w-5 text-zinc-600" />
+                  <PanelLeft className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
                 )}
               </button>
               <ModelSelector
@@ -433,6 +476,17 @@ const AIAssistantPage = () => {
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
+              <button
+                onClick={() => setParamPanelOpen(!paramPanelOpen)}
+                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl transition-colors"
+                title={paramPanelOpen ? 'Hide parameters' : 'Show parameters'}
+              >
+                {paramPanelOpen ? (
+                  <PanelRightClose className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+                ) : (
+                  <PanelRight className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -526,6 +580,14 @@ const AIAssistantPage = () => {
         data={pendingData}
         onConfirm={handleConfirmData}
         onCancel={handleCancelData}
+      />
+
+      {/* Parameter Panel */}
+      <ParameterPanel
+        params={chatParams}
+        onChange={setChatParams}
+        isOpen={paramPanelOpen}
+        defaultSystemPrompt={DEFAULT_SYSTEM_PROMPT}
       />
     </div>
   );

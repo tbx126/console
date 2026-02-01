@@ -128,16 +128,23 @@ async def chat_stream(request: ChatRequest):
     if not active_config:
         raise HTTPException(status_code=400, detail="No active LLM config")
 
+    print(f"[STREAM DEBUG] Using config: {active_config.name}, model: {active_config.model}, base_url: {active_config.base_url}")
+
     async def generate():
         try:
             async for chunk in llm_service.chat_stream(
                 request.message,
                 request.history,
-                active_config
+                active_config,
+                temperature=request.temperature,
+                top_p=request.top_p,
+                max_tokens=request.max_tokens,
+                system_prompt=request.system_prompt
             ):
                 yield f"data: {json.dumps({'content': chunk})}\n\n"
             yield "data: [DONE]\n\n"
         except Exception as e:
+            print(f"[STREAM ERROR] Exception in generate: {type(e).__name__}: {e}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(
@@ -227,7 +234,11 @@ async def chat_vision(request: VisionRequest):
             request.message,
             request.image_base64,
             request.history,
-            active_config
+            active_config,
+            temperature=request.temperature,
+            top_p=request.top_p,
+            max_tokens=request.max_tokens,
+            system_prompt=request.system_prompt
         )
         return {"message": response}
     except ValueError as e:

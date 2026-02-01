@@ -2,11 +2,18 @@ import apiClient from './api';
 
 const aiApi = {
   // 流式发送聊天消息
-  sendMessageStream: async (message, history = [], onChunk) => {
+  sendMessageStream: async (message, history = [], onChunk, params = {}) => {
     const response = await fetch('/api/ai/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, history })
+      body: JSON.stringify({
+        message,
+        history,
+        temperature: params.temperature,
+        top_p: params.top_p,
+        max_tokens: params.max_tokens,
+        system_prompt: params.system_prompt
+      })
     });
 
     const reader = response.body.getReader();
@@ -54,11 +61,15 @@ const aiApi = {
   },
 
   // 发送带图片的消息
-  sendVisionMessage: async (message, imageBase64, history = []) => {
+  sendVisionMessage: async (message, imageBase64, history = [], params = {}) => {
     const response = await apiClient.post('/ai/chat/vision', {
       message,
       image_base64: imageBase64,
-      history
+      history,
+      temperature: params.temperature,
+      top_p: params.top_p,
+      max_tokens: params.max_tokens,
+      system_prompt: params.system_prompt
     });
     return response.data;
   },

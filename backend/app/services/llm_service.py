@@ -15,21 +15,29 @@ class LLMService:
         self,
         message: str,
         history: List[ChatMessage],
-        config: LLMConfigProfile
+        config: LLMConfigProfile,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        system_prompt: Optional[str] = None
     ) -> str:
         """发送聊天消息并获取响应"""
-        messages = self._build_messages(message, history)
-        return await self._call_deepseek(messages, config)
+        messages = self._build_messages(message, history, system_prompt)
+        return await self._call_deepseek(messages, config, temperature, top_p, max_tokens)
 
     async def chat_stream(
         self,
         message: str,
         history: List[ChatMessage],
-        config: LLMConfigProfile
+        config: LLMConfigProfile,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        system_prompt: Optional[str] = None
     ) -> AsyncGenerator[str, None]:
         """流式发送聊天消息"""
-        messages = self._build_messages(message, history)
-        async for chunk in self._stream_openai_compatible(messages, config):
+        messages = self._build_messages(message, history, system_prompt)
+        async for chunk in self._stream_openai_compatible(messages, config, temperature, top_p, max_tokens):
             yield chunk
 
     async def chat_vision(
@@ -37,7 +45,11 @@ class LLMService:
         message: str,
         image_base64: str,
         history: List[ChatMessage],
-        config: LLMConfigProfile
+        config: LLMConfigProfile,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        system_prompt: Optional[str] = None
     ) -> str:
         """发送带图片的聊天消息（DeepSeek 不支持）"""
         raise ValueError("Vision not supported for DeepSeek")
@@ -45,13 +57,22 @@ class LLMService:
     def _build_messages(
         self,
         message: str,
-        history: List[ChatMessage]
+        history: List[ChatMessage],
+        custom_system_prompt: Optional[str] = None
     ) -> List[Dict[str, str]]:
         """构建消息列表"""
+        # 只有当 custom_system_prompt 为 None 或空字符串时才使用默认提示词
+        if custom_system_prompt is not None and custom_system_prompt.strip():
+            system_content = custom_system_prompt
+        else:
+            system_content = self._get_system_prompt()
+
+        print(f"[DEBUG] Using system prompt (first 100 chars): {system_content[:100]}...")
+
         messages = [
             {
                 "role": "system",
-                "content": self._get_system_prompt()
+                "content": system_content
             }
         ]
 
@@ -96,7 +117,10 @@ class LLMService:
     async def _call_deepseek(
         self,
         messages: List[Dict[str, str]],
-        config: LLMConfigProfile
+        config: LLMConfigProfile,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
+        max_tokens: Optional[int] = None
     ) -> str:
         """调用 OpenAI 兼容 API"""
         base_url = (config.base_url or "https://api.deepseek.com/v1").rstrip('/')
@@ -112,6 +136,13 @@ class LLMService:
             "messages": messages
         }
 
+        if temperature is not None:
+            payload["temperature"] = temperature
+        if top_p is not None:
+            payload["top_p"] = top_p
+        if max_tokens is not None:
+            payload["max_tokens"] = max_tokens
+
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.post(url, headers=headers, json=payload)
             response.raise_for_status()
@@ -121,7 +152,10 @@ class LLMService:
     async def _stream_openai_compatible(
         self,
         messages: List[Dict[str, str]],
-        config: LLMConfigProfile
+        config: LLMConfigProfile,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
+        max_tokens: Optional[int] = None
     ) -> AsyncGenerator[str, None]:
         """流式调用 OpenAI 兼容 API"""
         base_url = (config.base_url or "https://api.deepseek.com/v1").rstrip('/')
@@ -138,9 +172,24 @@ class LLMService:
             "stream": True
         }
 
+        if temperature is not None:
+            payload["temperature"] = temperature
+        if top_p is not None:
+            payload["top_p"] = top_p
+        if max_tokens is not None:
+            payload["max_tokens"] = max_tokens
+
+        print(f"[LLM DEBUG] Request URL: {url}")
+        print(f"[LLM DEBUG] Model: {config.model}")
+        print(f"[LLM DEBUG] Payload keys: {list(payload.keys())}")
+
         async with httpx.AsyncClient(timeout=120.0) as client:
             async with client.stream("POST", url, headers=headers, json=payload) as response:
-                response.raise_for_status()
+                print(f"[LLM DEBUG] Response status: {response.status_code}")
+                if response.status_code != 200:
+                    error_body = await response.aread()
+                    print(f"[LLM ERROR] Status: {response.status_code}, URL: {url}, Body: {error_body.decode()}")
+                    raise Exception(f"API Error: {response.status_code} - {error_body.decode()}")
                 async for line in response.aiter_lines():
                     if line.startswith("data: "):
                         data_str = line[6:]

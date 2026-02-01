@@ -31,6 +31,10 @@ class ChatRequest(BaseModel):
     """聊天请求"""
     message: str
     history: list[ChatMessage] = []
+    temperature: Optional[float] = None
+    top_p: Optional[float] = None
+    max_tokens: Optional[int] = None
+    system_prompt: Optional[str] = None
 
 
 class VisionRequest(BaseModel):
@@ -38,6 +42,10 @@ class VisionRequest(BaseModel):
     message: str
     image_base64: str
     history: list[ChatMessage] = []
+    temperature: Optional[float] = None
+    top_p: Optional[float] = None
+    max_tokens: Optional[int] = None
+    system_prompt: Optional[str] = None
 
 
 class ChatResponse(BaseModel):

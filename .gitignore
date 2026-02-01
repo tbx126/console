@@ -34,3 +34,4 @@ backend/data/
 # Cache
 .cache/
 *.cache
+.ace-tool/
