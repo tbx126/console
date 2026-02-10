@@ -8,10 +8,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import financeApi from '../services/financeApi';
 import travelApi from '../services/travelApi';
 import portfolioApi from '../services/portfolioApi';
-
-const CURRENCY_SYMBOLS = {
-  USD: '$', EUR: '€', CNY: '¥', JPY: '¥', GBP: '£', SGD: 'S$'
-};
+import { CURRENCY_SYMBOLS, convertAmount as convertCurrency } from '../lib/currency';
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -49,14 +46,8 @@ const Dashboard = () => {
     fetchStats();
   }, []);
 
-  // 货币转换函数
-  const convertAmount = (amount, fromCurrency = 'USD') => {
-    if (!exchangeRates || !amount) return amount;
-    if (fromCurrency === displayCurrency) return amount;
-    const fromRate = exchangeRates[fromCurrency] || 1;
-    const toRate = exchangeRates[displayCurrency] || 1;
-    return amount * (toRate / fromRate);
-  };
+  const convertAmount = (amount, fromCurrency = 'USD') =>
+    convertCurrency(amount, fromCurrency, displayCurrency, exchangeRates);
 
   const currencySymbol = CURRENCY_SYMBOLS[displayCurrency] || displayCurrency;
 

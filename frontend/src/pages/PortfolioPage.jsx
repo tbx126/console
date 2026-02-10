@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Plus, Filter } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -9,6 +9,7 @@ import ProjectList from '../components/portfolio/ProjectList';
 import PortfolioStats from '../components/portfolio/PortfolioStats';
 import InvestmentFilters from '../components/portfolio/InvestmentFilters';
 import PortfolioToolbar from '../components/portfolio/PortfolioToolbar';
+import { useAIDataRefresh } from '../hooks/useAIDataRefresh';
 
 const PortfolioPage = () => {
   const [activeTab, setActiveTab] = useState('investments');
@@ -44,14 +45,10 @@ const PortfolioPage = () => {
   };
 
   // 监听AI数据更新事件
-  useEffect(() => {
-    const handleDataUpdate = () => {
-      setRefreshKey(prev => prev + 1);
-    };
-
-    window.addEventListener('ai-data-updated', handleDataUpdate);
-    return () => window.removeEventListener('ai-data-updated', handleDataUpdate);
+  const handleDataUpdate = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
   }, []);
+  useAIDataRefresh(handleDataUpdate);
 
   const tabs = [
     { id: 'investments', label: 'Investments' },

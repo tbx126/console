@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Plus, Filter } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -10,6 +10,7 @@ import TravelStats from '../components/travel/TravelStats';
 import FlightFilters from '../components/travel/FlightFilters';
 import FlightToolbar from '../components/travel/FlightToolbar';
 import FlightMap from '../components/travel/FlightMap';
+import { useAIDataRefresh } from '../hooks/useAIDataRefresh';
 
 const TravelPage = () => {
   const [activeTab, setActiveTab] = useState('flights');
@@ -45,14 +46,10 @@ const TravelPage = () => {
   };
 
   // 监听AI数据更新事件
-  useEffect(() => {
-    const handleDataUpdate = () => {
-      setRefreshKey(prev => prev + 1);
-    };
-
-    window.addEventListener('ai-data-updated', handleDataUpdate);
-    return () => window.removeEventListener('ai-data-updated', handleDataUpdate);
+  const handleDataUpdate = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
   }, []);
+  useAIDataRefresh(handleDataUpdate);
 
   const tabs = [
     { id: 'flights', label: 'Flights' },

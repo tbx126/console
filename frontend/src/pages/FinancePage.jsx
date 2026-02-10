@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Filter, RefreshCw } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -11,11 +11,8 @@ import FinanceStats from '../components/finance/FinanceStats';
 import ExpenseFilters from '../components/finance/ExpenseFilters';
 import ExpenseToolbar from '../components/finance/ExpenseToolbar';
 import financeApi from '../services/financeApi';
-
-const CURRENCIES = ['CNY', 'USD', 'EUR', 'JPY', 'GBP', 'SGD'];
-const CURRENCY_SYMBOLS = {
-  USD: '$', EUR: '€', CNY: '¥', JPY: '¥', GBP: '£', SGD: 'S$'
-};
+import { CURRENCIES, CURRENCY_SYMBOLS, convertAmount as convertCurrency } from '../lib/currency';
+import { useAIDataRefresh } from '../hooks/useAIDataRefresh';
 
 const FinancePage = () => {
   const [activeTab, setActiveTab] = useState('expenses');
@@ -58,14 +55,10 @@ const FinancePage = () => {
   };
 
   // 监听AI数据更新事件
-  useEffect(() => {
-    const handleDataUpdate = () => {
-      setRefreshKey(prev => prev + 1);
-    };
-
-    window.addEventListener('ai-data-updated', handleDataUpdate);
-    return () => window.removeEventListener('ai-data-updated', handleDataUpdate);
+  const handleDataUpdate = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
   }, []);
+  useAIDataRefresh(handleDataUpdate);
 
   // 获取汇率
   useEffect(() => {
@@ -99,14 +92,8 @@ const FinancePage = () => {
     localStorage.setItem('displayCurrency', currency);
   };
 
-  // 货币转换函数
-  const convertAmount = (amount, fromCurrency = 'USD') => {
-    if (!exchangeRates || !amount) return amount;
-    if (fromCurrency === displayCurrency) return amount;
-    const fromRate = exchangeRates[fromCurrency] || 1;
-    const toRate = exchangeRates[displayCurrency] || 1;
-    return amount * (toRate / fromRate);
-  };
+  const convertAmount = (amount, fromCurrency = 'USD') =>
+    convertCurrency(amount, fromCurrency, displayCurrency, exchangeRates);
 
   const tabs = [
     { id: 'expenses', label: 'Expenses' },

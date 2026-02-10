@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Trash2, Edit } from 'lucide-react';
 import financeApi from '../../services/financeApi';
+import { getCurrencySymbol, convertAmount as convertCurrency } from '../../lib/currency';
 
 const ExpenseList = ({ refresh, filters, searchQuery, sortBy, viewMode, onEdit, displayCurrency = 'CNY', currencySymbol = '¥', exchangeRates }) => {
   const [expenses, setExpenses] = useState([]);
@@ -43,18 +44,11 @@ const ExpenseList = ({ refresh, filters, searchQuery, sortBy, viewMode, onEdit, 
     return categories.find(cat => cat.id === categoryId) || { name: categoryId, icon: '💰', color: '#6B7280' };
   };
 
-  const getCurrencySymbol = (currency) => {
-    const symbols = { USD: '$', EUR: '€', CNY: '¥', JPY: '¥', GBP: '£', SGD: 'S$' };
-    return symbols[currency] || currency;
-  };
-
-  // 货币转换函数
-  const convertAmount = (amount, fromCurrency = 'USD') => {
+  // 转换金额，相同货币返回 null（不显示转换）
+  const getConvertedDisplay = (amount, fromCurrency = 'USD') => {
     if (!exchangeRates || !amount) return null;
-    if (fromCurrency === displayCurrency) return null; // 相同货币不显示转换
-    const fromRate = exchangeRates[fromCurrency] || 1;
-    const toRate = exchangeRates[displayCurrency] || 1;
-    return amount * (toRate / fromRate);
+    if (fromCurrency === displayCurrency) return null;
+    return convertCurrency(amount, fromCurrency, displayCurrency, exchangeRates);
   };
 
   // Filter, search and sort expenses
@@ -137,7 +131,7 @@ const ExpenseList = ({ refresh, filters, searchQuery, sortBy, viewMode, onEdit, 
                       {getCurrencySymbol(expense.currency || 'USD')}{expense.amount.toFixed(2)}
                     </div>
                     {(() => {
-                      const converted = convertAmount(expense.amount, expense.currency || 'USD');
+                      const converted = getConvertedDisplay(expense.amount, expense.currency || 'USD');
                       if (converted !== null) {
                         return (
                           <div className="text-xs text-zinc-400 italic absolute right-0 top-full">

@@ -146,8 +146,8 @@ class GamingCacheService:
                     with open(dest, "wb") as f:
                         f.write(response.content)
                     return True
-        except Exception as e:
-            print(f"Failed to download {url}: {e}")
+        except Exception:
+            pass
         return False
 
     async def cache_screenshot(self, appid: int, screenshot: Dict) -> Optional[str]:
@@ -282,8 +282,8 @@ class GamingCacheService:
                     with open(local_file, "wb") as f:
                         f.write(response.content)
                     return f"/cache/news/{appid}/{url_hash}{ext}"
-        except Exception as e:
-            print(f"Failed to cache news image: {e}")
+        except Exception:
+            pass
         return None
 
     def _extract_image_url(self, contents: str) -> Optional[str]:
@@ -370,7 +370,7 @@ class GamingCacheService:
 
         # Download images in parallel
         tasks = [
-            self.cache_news_image(appid, url) if url else asyncio.coroutine(lambda: None)()
+            self.cache_news_image(appid, url) if url else asyncio.sleep(0)
             for url in image_urls
         ]
         results = await asyncio.gather(*tasks, return_exceptions=True)

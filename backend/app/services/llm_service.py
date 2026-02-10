@@ -1,5 +1,6 @@
 import httpx
 import json
+import re
 from typing import List, Dict, Any, AsyncGenerator, Optional
 from app.models.ai_assistant import LLMConfigProfile, ChatMessage, ParsedData, ParsedDataType
 
@@ -66,8 +67,6 @@ class LLMService:
             system_content = custom_system_prompt
         else:
             system_content = self._get_system_prompt()
-
-        print(f"[DEBUG] Using system prompt (first 100 chars): {system_content[:100]}...")
 
         messages = [
             {
@@ -179,16 +178,10 @@ class LLMService:
         if max_tokens is not None:
             payload["max_tokens"] = max_tokens
 
-        print(f"[LLM DEBUG] Request URL: {url}")
-        print(f"[LLM DEBUG] Model: {config.model}")
-        print(f"[LLM DEBUG] Payload keys: {list(payload.keys())}")
-
         async with httpx.AsyncClient(timeout=120.0) as client:
             async with client.stream("POST", url, headers=headers, json=payload) as response:
-                print(f"[LLM DEBUG] Response status: {response.status_code}")
                 if response.status_code != 200:
                     error_body = await response.aread()
-                    print(f"[LLM ERROR] Status: {response.status_code}, URL: {url}, Body: {error_body.decode()}")
                     raise Exception(f"API Error: {response.status_code} - {error_body.decode()}")
                 async for line in response.aiter_lines():
                     if line.startswith("data: "):
@@ -207,8 +200,6 @@ class LLMService:
         """从响应中解析结构化数据"""
         try:
             # 查找所有可能的 JSON 起始位置
-            import re
-            print(f"[PARSE DEBUG] Starting parse, response length: {len(response)}")
             for match in re.finditer(r'\{', response):
                 start = match.start()
                 # 使用栈匹配嵌套的大括号
@@ -221,23 +212,15 @@ class LLMService:
                         if stack == 0:
                             # 找到完整的 JSON
                             json_str = response[start:i+1]
-                            print(f"[PARSE DEBUG] Found JSON: {json_str}")
                             try:
                                 data_dict = json.loads(json_str)
-                                print(f"[PARSE DEBUG] Parsed dict: {data_dict}")
                                 if "data_type" in data_dict:
-                                    print(f"[PARSE DEBUG] Creating ParsedData...")
-                                    result = ParsedData(**data_dict)
-                                    print(f"[PARSE DEBUG] Success: {result}")
-                                    return result
-                            except Exception as e:
-                                print(f"[PARSE DEBUG] Error: {e}")
+                                    return ParsedData(**data_dict)
+                            except Exception:
                                 continue
                             break
-        except Exception as e:
-            print(f"[PARSE DEBUG] Outer exception: {e}")
+        except Exception:
             pass
-        print(f"[PARSE DEBUG] Returning None")
         return None
 
 

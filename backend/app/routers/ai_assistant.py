@@ -56,19 +56,12 @@ async def chat(request: ChatRequest):
         # 尝试解析结构化数据
         parsed_data = await llm_service.parse_response(response_text)
 
-        # 添加调试输出
-        print(f"[DEBUG] LLM Response: {response_text[:300]}")
-        print(f"[DEBUG] Parsed Data: {parsed_data}")
-
         # 自动提交解析的数据
         submission_result = None
         if parsed_data:
             try:
                 data_type = parsed_data.data_type
                 data = parsed_data.data
-
-                print(f"[DEBUG] Data Type: {data_type}")
-                print(f"[DEBUG] Data: {data}")
 
                 if data_type == "expense":
                     finance_service.create_expense(Expense(**data))
@@ -87,7 +80,6 @@ async def chat(request: ChatRequest):
                         "cost": data.get("cost"),
                         "travel_class": data.get("travel_class") or data.get("class") or "economy"
                     }
-                    print(f"[DEBUG] Mapped flight data: {flight_data}")
                     travel_service.create_flight(Flight(**flight_data))
                     submission_result = {"success": True, "message": "Flight added successfully!"}
                 elif data_type == "investment":
@@ -96,10 +88,6 @@ async def chat(request: ChatRequest):
                 else:
                     submission_result = {"success": False, "message": f"Unknown data type: {data_type}"}
             except Exception as submit_error:
-                import traceback
-                error_detail = traceback.format_exc()
-                print(f"[DEBUG] Exception occurred: {submit_error}")
-                print(f"[DEBUG] Traceback: {error_detail}")
                 submission_result = {"success": False, "message": f"Failed to submit data: {str(submit_error)}"}
 
         return ChatResponse(
@@ -128,8 +116,6 @@ async def chat_stream(request: ChatRequest):
     if not active_config:
         raise HTTPException(status_code=400, detail="No active LLM config")
 
-    print(f"[STREAM DEBUG] Using config: {active_config.name}, model: {active_config.model}, base_url: {active_config.base_url}")
-
     async def generate():
         try:
             async for chunk in llm_service.chat_stream(
@@ -144,7 +130,6 @@ async def chat_stream(request: ChatRequest):
                 yield f"data: {json.dumps({'content': chunk})}\n\n"
             yield "data: [DONE]\n\n"
         except Exception as e:
-            print(f"[STREAM ERROR] Exception in generate: {type(e).__name__}: {e}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(

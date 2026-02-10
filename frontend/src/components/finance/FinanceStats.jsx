@@ -3,19 +3,14 @@ import { Wallet, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react';
 import { StatCard } from '../ui/StatCard';
 import { Skeleton } from '../ui/Skeleton';
 import financeApi from '../../services/financeApi';
+import { convertAmount as convertCurrency } from '../../lib/currency';
 
 export default function FinanceStats({ refresh, displayCurrency = 'CNY', currencySymbol = '¥', exchangeRates }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
 
-  // 货币转换函数
-  const convertAmount = (amount, fromCurrency = 'USD') => {
-    if (!exchangeRates || !amount) return amount;
-    if (fromCurrency === displayCurrency) return amount;
-    const fromRate = exchangeRates[fromCurrency] || 1;
-    const toRate = exchangeRates[displayCurrency] || 1;
-    return amount * (toRate / fromRate);
-  };
+  const convertAmount = (amount, fromCurrency = 'USD') =>
+    convertCurrency(amount, fromCurrency, displayCurrency, exchangeRates);
 
   useEffect(() => {
     const fetchStats = async () => {

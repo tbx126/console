@@ -138,7 +138,6 @@ class FlightLookupService:
                 )
 
                 if response.status_code != 200:
-                    print(f"OpenSky error: {response.status_code} - {response.text[:200]}")
                     return None
 
                 flights = response.json()
@@ -150,8 +149,7 @@ class FlightLookupService:
                         return self._normalize_opensky_data(flight, airline_code, flight_num, date)
 
                 return None
-        except Exception as e:
-            print(f"OpenSky query error: {e}")
+        except Exception:
             return None
 
     def _normalize_opensky_data(self, flight: Dict, airline_code: str, flight_num: str, date: str) -> Dict[str, Any]:
@@ -195,8 +193,7 @@ class FlightLookupService:
 
                 flight = data["response"]
                 return self._normalize_airlabs_data(flight, date)
-        except Exception as e:
-            print(f"AirLabs query error: {e}")
+        except Exception:
             return None
 
     def _normalize_airlabs_data(self, flight: Dict, date: str) -> Dict[str, Any]:
@@ -238,8 +235,7 @@ class FlightLookupService:
                     return None
 
                 return self._normalize_aviationstack_data(flights[0], date)
-        except Exception as e:
-            print(f"AviationStack query error: {e}")
+        except Exception:
             return None
 
     def _normalize_aviationstack_data(self, flight: Dict, date: str) -> Dict[str, Any]:
@@ -284,8 +280,7 @@ class FlightLookupService:
                     return None
 
                 return self._normalize_aerodatabox_data(flights[0], date)
-        except Exception as e:
-            print(f"AeroDataBox query error: {e}")
+        except Exception:
             return None
 
     def _normalize_aerodatabox_data(self, flight: Dict, date: str) -> Dict[str, Any]:
