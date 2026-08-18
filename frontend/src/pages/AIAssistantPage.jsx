@@ -103,7 +103,7 @@ const AIAssistantPage = () => {
     try {
       const conv = await aiApi.getConversation(convId);
       setMessages(conv?.messages || []);
-    } catch (error) {
+    } catch {
       const localConv = conversations.find(c => c.id === convId);
       setMessages(localConv?.messages || []);
     }
@@ -123,7 +123,7 @@ const AIAssistantPage = () => {
       setConversations(prev => [newConv, ...prev]);
       setCurrentConvId(newConv.id);
       setMessages([]);
-    } catch (error) {
+    } catch {
       toast.error('Failed to create conversation');
     }
   };
@@ -149,7 +149,7 @@ const AIAssistantPage = () => {
           setMessages([]);
         }
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete conversation');
     }
   };
@@ -277,7 +277,7 @@ const AIAssistantPage = () => {
       } catch (e) {
         console.error('Failed to parse response:', e);
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to send message');
     } finally {
       setIsLoading(false);
@@ -307,7 +307,7 @@ const AIAssistantPage = () => {
       setConfigs(newConfigs);
       setCurrentConfig(newConfigs.find(c => c.id === configId));
       toast.success('Model switched');
-    } catch (error) {
+    } catch {
       toast.error('Failed to switch model');
     }
   };
@@ -356,7 +356,7 @@ const AIAssistantPage = () => {
       } else {
         toast.error(result.message);
       }
-    } catch (e) {
+    } catch {
       toast.error('记录失败');
     }
     setShowDataModal(false);
@@ -416,7 +416,7 @@ const AIAssistantPage = () => {
           prev.map(c => c.id === currentConvId ? { ...c, messages: finalMessages } : c)
         );
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to regenerate');
     } finally {
       setIsLoading(false);

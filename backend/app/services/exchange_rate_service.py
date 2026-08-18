@@ -1,77 +1,108 @@
-"""Exchange rate service using exchangerate-api.com"""
-import httpx
-from datetime import datetime, timedelta
-from typing import Dict, Optional
+"""Exchange-rate service with bounded caching and request coalescing."""
+
 import asyncio
+from datetime import timedelta
+from typing import Dict
+
+from app.services.http_client import http_client
+from app.utils.cache import AsyncSingleFlight, TTLCache
 
 
 class ExchangeRateService:
-    """Service for fetching and caching exchange rates"""
-
-    BASE_URL = "https://api.exchangerate-api.com/v4/latest"
-    SUPPORTED_CURRENCIES = ["USD", "EUR", "CNY", "JPY", "GBP", "SGD"]
-    CACHE_DURATION = timedelta(hours=1)
+    FRANKFURTER_URL = "https://api.frankfurter.app/latest"
+    CACHE_DURATION = timedelta(hours=6)
+    FALLBACK_CACHE_DURATION = timedelta(minutes=5)
+    SUPPORTED_CURRENCIES = ["USD", "CNY", "SGD", "EUR", "GBP", "JPY", "HKD"]
+    FALLBACK_RATES = {
+        "USD": 7.2,
+        "SGD": 5.3,
+        "EUR": 7.8,
+        "GBP": 9.1,
+        "JPY": 0.048,
+        "HKD": 0.92,
+    }
 
     def __init__(self):
-        self._cache: Dict[str, dict] = {}
-        self._cache_time: Optional[datetime] = None
+        self._rate_cache: TTLCache[str, float] = TTLCache(
+            max_size=64,
+            default_ttl=self.CACHE_DURATION.total_seconds(),
+        )
+        self._requests: AsyncSingleFlight[str, float] = AsyncSingleFlight()
 
-    def _is_cache_valid(self) -> bool:
-        """Check if cache is still valid"""
-        if not self._cache_time:
-            return False
-        return datetime.now() - self._cache_time < self.CACHE_DURATION
+    async def get_rate_to_cny(self, from_currency: str) -> float:
+        """Get one currency's CNY rate, using stale data if the API is unavailable."""
+        currency = from_currency.upper()
+        if currency == "CNY":
+            return 1.0
+
+        cached = self._rate_cache.get(currency)
+        if cached is not None:
+            return cached
+
+        async def fetch() -> float:
+            # Another caller may have populated the cache before this task started.
+            cached_after_wait = self._rate_cache.get(currency)
+            if cached_after_wait is not None:
+                return cached_after_wait
+
+            try:
+                client = await http_client.get()
+                response = await client.get(
+                    self.FRANKFURTER_URL,
+                    params={"from": currency, "to": "CNY"},
+                    timeout=10.0,
+                )
+                response.raise_for_status()
+                rate = response.json().get("rates", {}).get("CNY")
+                if rate is not None:
+                    value = float(rate)
+                    self._rate_cache.set(currency, value)
+                    return value
+            except Exception as error:
+                print(f"Error fetching exchange rate {currency} to CNY: {error}")
+
+            stale = self._rate_cache.get_stale(currency)
+            if stale is not None:
+                return stale
+
+            fallback = self.FALLBACK_RATES.get(currency, 1.0)
+            self._rate_cache.set(
+                currency,
+                fallback,
+                ttl=self.FALLBACK_CACHE_DURATION.total_seconds(),
+            )
+            return fallback
+
+        return await self._requests.run(currency, fetch)
 
     async def get_rates(self, base: str = "USD") -> Dict[str, float]:
-        """Get exchange rates for base currency"""
-        if base not in self.SUPPORTED_CURRENCIES:
-            base = "USD"
+        """Fetch each distinct rate once and calculate the requested cross rates."""
+        normalized_base = base.upper()
+        if normalized_base not in self.SUPPORTED_CURRENCIES:
+            normalized_base = "USD"
 
-        cache_key = f"rates_{base}"
-        if self._is_cache_valid() and cache_key in self._cache:
-            return self._cache[cache_key]
+        currencies = [
+            currency for currency in self.SUPPORTED_CURRENCIES if currency != "CNY"
+        ]
+        values = await asyncio.gather(
+            *(self.get_rate_to_cny(currency) for currency in currencies)
+        )
+        cny_rates = dict(zip(currencies, values))
+        cny_rates["CNY"] = 1.0
+        base_to_cny = cny_rates[normalized_base]
 
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.get(f"{self.BASE_URL}/{base}")
-                response.raise_for_status()
-                data = response.json()
-
-                rates = {
-                    currency: data["rates"].get(currency, 1.0)
-                    for currency in self.SUPPORTED_CURRENCIES
-                }
-
-                self._cache[cache_key] = rates
-                self._cache_time = datetime.now()
-                return rates
-
-        except Exception as e:
-            print(f"Error fetching exchange rates: {e}")
-            # Return default rates on error
-            return {c: 1.0 for c in self.SUPPORTED_CURRENCIES}
-
-    async def convert(self, amount: float, from_currency: str, to_currency: str) -> float:
-        """Convert amount between currencies"""
-        if from_currency == to_currency:
-            return amount
-
-        rates = await self.get_rates(from_currency)
-        rate = rates.get(to_currency, 1.0)
-        return amount * rate
-
-    def get_currency_symbol(self, currency: str) -> str:
-        """Get currency symbol"""
-        symbols = {
-            "USD": "$",
-            "EUR": "€",
-            "CNY": "¥",
-            "JPY": "¥",
-            "GBP": "£",
-            "SGD": "S$"
+        return {
+            currency: (
+                1.0 if currency == normalized_base else base_to_cny / cny_rates[currency]
+            )
+            for currency in self.SUPPORTED_CURRENCIES
         }
-        return symbols.get(currency, currency)
+
+    def cache_info(self) -> Dict:
+        return {
+            "rates": self._rate_cache.info(),
+            "requests": self._requests.info(),
+        }
 
 
-# Global instance
 exchange_rate_service = ExchangeRateService()

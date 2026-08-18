@@ -1,11 +1,10 @@
 import { useState, memo, lazy, Suspense } from "react";
 import { cn } from "../../lib/utils";
 import { Copy, Check } from "lucide-react";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 // 懒加载 Mermaid 组件
 const MermaidDiagram = lazy(() => import("./MermaidDiagram").then(m => ({ default: m.MermaidDiagram })));
+const SyntaxHighlighterBlock = lazy(() => import("./SyntaxHighlighterBlock"));
 
 interface CodeBlockProps {
   language: string;
@@ -108,22 +107,13 @@ export const CodeBlock = memo(function CodeBlock({ language, children, isDark, i
           )}
         </button>
       </div>
-      <SyntaxHighlighter
-        style={isDark ? oneDark : oneLight}
-        language={language}
-        PreTag="div"
-        className="!rounded-t-none !rounded-b-xl text-sm !my-0 !bg-transparent"
-        customStyle={{
-          margin: 0,
-          background: 'transparent',
-          padding: '1.25rem'
-        }}
-        codeTagProps={{
-          style: { background: 'transparent' }
-        }}
-      >
-        {code}
-      </SyntaxHighlighter>
+      <Suspense fallback={
+        <pre className="m-0 overflow-x-auto bg-transparent p-5 text-sm">
+          <code>{code}</code>
+        </pre>
+      }>
+        <SyntaxHighlighterBlock code={code} language={language} isDark={isDark} />
+      </Suspense>
     </div>
   );
 });

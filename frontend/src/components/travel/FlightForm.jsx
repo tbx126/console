@@ -3,7 +3,7 @@ import { Search, Loader2 } from 'lucide-react';
 import travelApi from '../../services/travelApi';
 
 const FlightForm = ({ flight, onSuccess, onCancel }) => {
-  const isEditMode = !!flight;
+  const isEditMode = Boolean(flight);
   const [formData, setFormData] = useState({
     airline: flight?.airline || '',
     airline_code: flight?.airline_code || '',
@@ -24,8 +24,8 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
   const [lookupResult, setLookupResult] = useState(null);
   const [error, setError] = useState(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
     setError(null);
 
@@ -35,30 +35,34 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
         distance: formData.distance ? parseFloat(formData.distance) : null,
         cost: formData.cost ? parseFloat(formData.cost) : null
       };
+
       if (isEditMode) {
         await travelApi.updateFlight(flight.id, flightData);
       } else {
         await travelApi.createFlight(flightData);
       }
+
       onSuccess();
-    } catch (err) {
-      setError(err.response?.data?.detail || `Failed to ${isEditMode ? 'update' : 'create'} flight`);
+    } catch (error) {
+      setError(error.response?.data?.detail || `Failed to ${isEditMode ? 'update' : 'create'} flight`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => {
-      const updated = { ...prev, [name]: value };
-      // 从航班号自动提取航空公司代码
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setFormData((previous) => {
+      const updated = { ...previous, [name]: value };
+
       if (name === 'flight_number' && value) {
         const match = value.toUpperCase().match(/^([A-Z]{2,3})/);
         if (match) {
           updated.airline_code = match[1];
         }
       }
+
       return updated;
     });
   };
@@ -79,18 +83,18 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
 
       if (result.success && result.data) {
         const data = result.data;
-        setFormData(prev => ({
-          ...prev,
-          airline: data.airline_name || data.airline_code || prev.airline,
-          airline_code: data.airline_code || prev.airline_code,
-          origin: data.departure_airport || prev.origin,
-          destination: data.arrival_airport || prev.destination,
-          departure_time: data.departure_time || prev.departure_time,
-          arrival_time: data.arrival_time || prev.arrival_time,
-          distance: data.distance_km || prev.distance,
+        setFormData((previous) => ({
+          ...previous,
+          airline: data.airline_name || data.airline_code || previous.airline,
+          airline_code: data.airline_code || previous.airline_code,
+          origin: data.departure_airport || previous.origin,
+          destination: data.arrival_airport || previous.destination,
+          departure_time: data.departure_time || previous.departure_time,
+          arrival_time: data.arrival_time || previous.arrival_time,
+          distance: data.distance_km || previous.distance,
         }));
       }
-    } catch (err) {
+    } catch {
       setError('Failed to lookup flight information');
     } finally {
       setLookupLoading(false);
@@ -105,7 +109,6 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
         </div>
       )}
 
-      {/* Flight Lookup Section */}
       <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
         <div className="flex items-center gap-2 mb-3">
           <Search className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -160,9 +163,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
         </div>
         {lookupResult && (
           <div className={`mt-3 text-sm ${lookupResult.success ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
-            {lookupResult.success
-              ? `Found via ${lookupResult.source}`
-              : lookupResult.error || 'Flight not found'}
+            {lookupResult.success ? `Found via ${lookupResult.source}` : lookupResult.error || 'Flight not found'}
           </div>
         )}
       </div>

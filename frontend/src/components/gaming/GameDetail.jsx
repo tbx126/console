@@ -10,35 +10,69 @@ const toFullUrl = (localPath, fallback) => {
   return fallback;
 };
 
-export default function GameDetail({ game, onClose }) {
+export default function GameDetail({ game, onClose, cacheRef }) {
   const [details, setDetails] = useState(null);
   const [achievements, setAchievements] = useState([]);
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (game) {
-      fetchData();
+    if (!game) {
+      return;
     }
-  }, [game]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [detailsRes, achievementsRes, newsRes] = await Promise.all([
-        gamingApi.getGameDetails(game.appid).catch(() => ({ data: null })),
-        gamingApi.getDetailedAchievements(game.appid).catch(() => ({ data: { achievements: [] } })),
-        gamingApi.getGameNews(game.appid, 8).catch(() => ({ data: { news: [] } }))
-      ]);
-      setDetails(detailsRes.data);
-      setAchievements(achievementsRes.data.achievements || []);
-      setNews(newsRes.data.news || []);
-    } catch (error) {
-      console.error('Failed to fetch game data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    let cancelled = false;
+
+    const fetchData = async () => {
+      const appid = game.appid;
+      const cache = cacheRef?.current;
+
+      if (cache && cache[appid]) {
+        const cached = cache[appid];
+        if (!cancelled) {
+          setDetails(cached.details);
+          setAchievements(cached.achievements);
+          setNews(cached.news);
+          setLoading(false);
+        }
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const [detailsRes, achievementsRes, newsRes] = await Promise.all([
+          gamingApi.getGameDetails(appid).catch(() => ({ data: null })),
+          gamingApi.getDetailedAchievements(appid).catch(() => ({ data: { achievements: [] } })),
+          gamingApi.getGameNews(appid, 8).catch(() => ({ data: { news: [] } }))
+        ]);
+        const nextDetails = detailsRes.data;
+        const nextAchievements = achievementsRes.data.achievements || [];
+        const nextNews = newsRes.data.news || [];
+
+        if (!cancelled) {
+          setDetails(nextDetails);
+          setAchievements(nextAchievements);
+          setNews(nextNews);
+        }
+
+        if (cache) {
+          cache[appid] = { details: nextDetails, achievements: nextAchievements, news: nextNews };
+        }
+      } catch (error) {
+        console.error('Failed to fetch game data:', error);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void fetchData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cacheRef, game]);
 
   const formatPlaytime = (minutes) => {
     const hours = Math.floor(minutes / 60);
@@ -99,7 +133,6 @@ export default function GameDetail({ game, onClose }) {
             <div className="flex flex-col lg:flex-row h-full">
               <LeftColumn game={game} details={details} formatPlaytime={formatPlaytime} formatReleaseDate={formatReleaseDate} />
               <RightColumn
-                details={details}
                 achievements={achievements}
                 unlockedCount={unlockedCount}
                 formatUnlockTime={formatUnlockTime}
@@ -173,7 +206,7 @@ function LeftColumn({ game, details, formatPlaytime, formatReleaseDate }) {
   );
 }
 
-function RightColumn({ details, achievements, unlockedCount, formatUnlockTime, news, appid }) {
+function RightColumn({ achievements, unlockedCount, formatUnlockTime, news, appid }) {
   return (
     <div className="lg:w-3/5 p-6 flex flex-col h-full">
       {/* News Timeline - Horizontal Scroll */}
@@ -282,23 +315,13 @@ function AchievementCard({ achievement, unlocked, formatUnlockTime }) {
   );
 }
 
-function StatBox({ icon: Icon, label, value }) {
-  return (
-    <div className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3">
-      <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 text-xs">
-        <Icon className="h-3.5 w-3.5" />
-        <span>{label}</span>
-      </div>
-      <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mt-1">{value}</p>
-    </div>
-  );
-}
+function StatBoxCompact({ icon, label, value }) {
+  const IconComponent = icon;
 
-function StatBoxCompact({ icon: Icon, label, value }) {
   return (
     <div className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3">
       <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 text-xs">
-        <Icon className="h-3.5 w-3.5" />
+        <IconComponent className="h-3.5 w-3.5" />
         <span>{label}</span>
       </div>
       <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">{value}</p>
@@ -306,22 +329,12 @@ function StatBoxCompact({ icon: Icon, label, value }) {
   );
 }
 
-function InfoRow({ icon: Icon, label, value }) {
-  return (
-    <div className="flex items-start gap-3 p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg">
-      <Icon className="h-4 w-4 text-zinc-400 mt-0.5" />
-      <div>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">{label}</p>
-        <p className="text-sm text-zinc-900 dark:text-zinc-100">{value}</p>
-      </div>
-    </div>
-  );
-}
+function InfoRowCompact({ icon, label, value }) {
+  const IconComponent = icon;
 
-function InfoRowCompact({ icon: Icon, label, value }) {
   return (
     <div className="flex items-center gap-2 text-xs">
-      <Icon className="h-3 w-3 text-zinc-400 flex-shrink-0" />
+      <IconComponent className="h-3 w-3 text-zinc-400 flex-shrink-0" />
       <span className="text-zinc-500 dark:text-zinc-400">{label}:</span>
       <span className="text-zinc-900 dark:text-zinc-100 truncate">{value}</span>
     </div>
@@ -417,7 +430,7 @@ function NewsTimelineCard({ item, formatDate, appid }) {
     const contents = item.contents || '';
 
     // Try BBCode: [img]{STEAM_CLAN_IMAGE}/clan_id/hash.ext[/img]
-    const bbcodeMatch = contents.match(/\[img\]\{STEAM_CLAN_IMAGE\}\/([^/]+)\/([^\[]+)\[\/img\]/);
+    const bbcodeMatch = contents.match(/\[img\]\{STEAM_CLAN_IMAGE\}\/([^/]+)\/([^[]+)\[\/img\]/);
     if (bbcodeMatch) {
       return `https://clan.akamai.steamstatic.com/images/${bbcodeMatch[1]}/${bbcodeMatch[2]}`;
     }
@@ -427,7 +440,7 @@ function NewsTimelineCard({ item, formatDate, appid }) {
     if (htmlMatch) return htmlMatch[1];
 
     // Try direct BBCode: [img]https://...[/img]
-    const directMatch = contents.match(/\[img\](https?:\/\/[^\[]+)\[\/img\]/);
+    const directMatch = contents.match(/\[img\](https?:\/\/[^[]+)\[\/img\]/);
     if (directMatch) return directMatch[1];
 
     // Fallback to game header image

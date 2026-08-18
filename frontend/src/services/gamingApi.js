@@ -1,13 +1,13 @@
-import api from './api';
+import api, { cachedGet } from './api';
 
 const gamingApi = {
-  getGames: () => api.get('/gaming/games'),
-  getGame: (appid) => api.get(`/gaming/games/${appid}`),
-  getGameDetails: (appid) => api.get(`/gaming/games/${appid}/details`),
-  getGameAchievements: (appid) => api.get(`/gaming/games/${appid}/achievements`),
-  getDetailedAchievements: (appid) => api.get(`/gaming/games/${appid}/achievements-detailed`),
-  getGameNews: (appid, count = 10) => api.get(`/gaming/games/${appid}/news`, { params: { count } }),
-  getStatistics: () => api.get('/gaming/statistics'),
+  getGames: () => cachedGet('/gaming/games'),
+  getGame: (appid) => cachedGet(`/gaming/games/${appid}`),
+  getGameDetails: (appid) => cachedGet(`/gaming/games/${appid}/details`),
+  getGameAchievements: (appid) => cachedGet(`/gaming/games/${appid}/achievements`),
+  getDetailedAchievements: (appid) => cachedGet(`/gaming/games/${appid}/achievements-detailed`),
+  getGameNews: (appid, count = 10) => cachedGet(`/gaming/games/${appid}/news`, { params: { count } }),
+  getStatistics: () => cachedGet('/gaming/statistics'),
   syncGames: () => api.post('/gaming/sync'),
   getCacheSyncStatus: () => api.get('/gaming/cache/sync-status'),
 };

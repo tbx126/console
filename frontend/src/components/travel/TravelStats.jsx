@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Plane, MapPin, Award, DollarSign, Building2 } from 'lucide-react';
 import { StatCard } from '../ui/StatCard';
 import { Skeleton } from '../ui/Skeleton';
@@ -9,20 +9,29 @@ export default function TravelStats({ refresh }) {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchStats = async () => {
       try {
-        // 仅首次加载时显示 loading 状态
-        if (!stats) setLoading(true);
+        setLoading(true);
         const data = await travelApi.getStatistics();
-        setStats(data);
+        if (!cancelled) {
+          setStats(data);
+        }
       } catch (error) {
         console.error('Failed to fetch travel stats:', error);
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchStats();
+    void fetchStats();
+
+    return () => {
+      cancelled = true;
+    };
   }, [refresh]);
 
   if (loading) {

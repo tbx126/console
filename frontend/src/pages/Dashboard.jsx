@@ -8,7 +8,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import financeApi from '../services/financeApi';
 import travelApi from '../services/travelApi';
 import portfolioApi from '../services/portfolioApi';
-import { CURRENCY_SYMBOLS, convertAmount as convertCurrency } from '../lib/currency';
+import { getCurrencySymbol, convertAmount as convertCurrency } from '../lib/currency';
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -49,7 +49,7 @@ const Dashboard = () => {
   const convertAmount = (amount, fromCurrency = 'USD') =>
     convertCurrency(amount, fromCurrency, displayCurrency, exchangeRates);
 
-  const currencySymbol = CURRENCY_SYMBOLS[displayCurrency] || displayCurrency;
+  const currencySymbol = getCurrencySymbol(displayCurrency);
 
   if (loading) {
     return (

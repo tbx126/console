@@ -267,7 +267,7 @@ async def get_configs():
 @router.post("/configs", response_model=LLMConfigProfile)
 async def create_config(config: LLMConfigProfile):
     """创建新的 LLM 配置"""
-    data = data_manager.read_data(settings.config_data_file)
+    data = data_manager.read_data(settings.config_data_file, mutable=True)
     if "llm_configs" not in data:
         data["llm_configs"] = []
 
@@ -288,7 +288,7 @@ async def create_config(config: LLMConfigProfile):
 @router.put("/configs/{config_id}", response_model=LLMConfigProfile)
 async def update_config_profile(config_id: str, config: LLMConfigProfile):
     """更新 LLM 配置"""
-    data = data_manager.read_data(settings.config_data_file)
+    data = data_manager.read_data(settings.config_data_file, mutable=True)
     configs = data.get("llm_configs", [])
 
     for i, c in enumerate(configs):
@@ -309,7 +309,7 @@ async def update_config_profile(config_id: str, config: LLMConfigProfile):
 @router.delete("/configs/{config_id}")
 async def delete_config(config_id: str):
     """删除 LLM 配置"""
-    data = data_manager.read_data(settings.config_data_file)
+    data = data_manager.read_data(settings.config_data_file, mutable=True)
     configs = data.get("llm_configs", [])
     data["llm_configs"] = [c for c in configs if c["id"] != config_id]
     data_manager.write_data(settings.config_data_file, data)
@@ -319,7 +319,7 @@ async def delete_config(config_id: str):
 @router.post("/configs/{config_id}/activate")
 async def activate_config(config_id: str):
     """激活指定配置为当前使用"""
-    data = data_manager.read_data(settings.config_data_file)
+    data = data_manager.read_data(settings.config_data_file, mutable=True)
     configs = data.get("llm_configs", [])
 
     target = None
@@ -350,7 +350,7 @@ async def get_conversations():
 @router.post("/conversations", response_model=Conversation)
 async def create_conversation(conversation: Conversation):
     """创建新对话"""
-    data = data_manager.read_data(settings.config_data_file)
+    data = data_manager.read_data(settings.config_data_file, mutable=True)
     if "conversations" not in data:
         data["conversations"] = []
 
@@ -376,7 +376,7 @@ async def get_conversation(conv_id: str):
 @router.put("/conversations/{conv_id}", response_model=Conversation)
 async def update_conversation(conv_id: str, conversation: Conversation):
     """更新对话"""
-    data = data_manager.read_data(settings.config_data_file)
+    data = data_manager.read_data(settings.config_data_file, mutable=True)
     convs = data.get("conversations", [])
 
     for i, c in enumerate(convs):
@@ -395,7 +395,7 @@ async def update_conversation(conv_id: str, conversation: Conversation):
 @router.delete("/conversations/{conv_id}")
 async def delete_conversation(conv_id: str):
     """删除对话"""
-    data = data_manager.read_data(settings.config_data_file)
+    data = data_manager.read_data(settings.config_data_file, mutable=True)
     convs = data.get("conversations", [])
     data["conversations"] = [c for c in convs if c["id"] != conv_id]
     data_manager.write_data(settings.config_data_file, data)
@@ -405,7 +405,7 @@ async def delete_conversation(conv_id: str):
 @router.post("/conversations/{conv_id}/generate-title")
 async def generate_conversation_title(conv_id: str):
     """使用 LLM 生成对话标题"""
-    data = data_manager.read_data(settings.config_data_file)
+    data = data_manager.read_data(settings.config_data_file, mutable=True)
 
     # 获取对话
     conv = None

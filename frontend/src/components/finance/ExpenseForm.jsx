@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import financeApi from '../../services/financeApi';
 
-const CURRENCIES = ['USD', 'EUR', 'CNY', 'JPY', 'GBP', 'SGD'];
+const CURRENCIES = ['USD', 'EUR', 'CNY', 'JPY', 'GBP', 'SGD', 'HKD'];
 
 const ExpenseForm = ({ expense, onSuccess, onCancel }) => {
-  const isEditMode = !!expense;
+  const isEditMode = Boolean(expense);
   const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     amount: expense?.amount || '',
@@ -19,23 +19,37 @@ const ExpenseForm = ({ expense, onSuccess, onCancel }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadCategories();
-  }, []);
+    let cancelled = false;
 
-  const loadCategories = async () => {
-    try {
-      const data = await financeApi.getCategories();
-      setCategories(data);
-      if (data.length > 0 && !formData.category && !isEditMode) {
-        setFormData(prev => ({ ...prev, category: data[0].id }));
+    const loadCategories = async () => {
+      try {
+        const data = await financeApi.getCategories();
+        if (cancelled) {
+          return;
+        }
+
+        setCategories(data);
+        if (data.length > 0 && !isEditMode) {
+          setFormData((previous) => (
+            previous.category ? previous : { ...previous, category: data[0].id }
+          ));
+        }
+      } catch {
+        if (!cancelled) {
+          setError('Failed to load categories');
+        }
       }
-    } catch (err) {
-      setError('Failed to load categories');
-    }
-  };
+    };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    void loadCategories();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isEditMode]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
     setError(null);
 
@@ -44,22 +58,24 @@ const ExpenseForm = ({ expense, onSuccess, onCancel }) => {
         ...formData,
         amount: parseFloat(formData.amount)
       };
+
       if (isEditMode) {
         await financeApi.updateExpense(expense.id, data);
       } else {
         await financeApi.createExpense(data);
       }
+
       onSuccess();
-    } catch (err) {
-      setError(err.response?.data?.detail || `Failed to ${isEditMode ? 'update' : 'create'} expense`);
+    } catch (error) {
+      setError(error.response?.data?.detail || `Failed to ${isEditMode ? 'update' : 'create'} expense`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((previous) => ({ ...previous, [name]: value }));
   };
 
   return (
@@ -96,8 +112,8 @@ const ExpenseForm = ({ expense, onSuccess, onCancel }) => {
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {CURRENCIES.map(c => (
-              <option key={c} value={c}>{c}</option>
+            {CURRENCIES.map((currency) => (
+              <option key={currency} value={currency}>{currency}</option>
             ))}
           </select>
         </div>
@@ -115,9 +131,9 @@ const ExpenseForm = ({ expense, onSuccess, onCancel }) => {
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Select a category</option>
-          {categories.map(cat => (
-            <option key={cat.id} value={cat.id}>
-              {cat.icon} {cat.name}
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.icon} {category.name}
             </option>
           ))}
         </select>

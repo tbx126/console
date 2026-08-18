@@ -1,12 +1,14 @@
 import { useState, useCallback } from 'react';
-import { Plus, Filter } from 'lucide-react';
+import { Plus, Filter, RefreshCw } from 'lucide-react';
+import toast from 'react-hot-toast';
+import portfolioApi from '../services/portfolioApi';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import Modal from '../components/common/Modal';
 import InvestmentForm from '../components/portfolio/InvestmentForm';
 import InvestmentList from '../components/portfolio/InvestmentList';
-import ProjectList from '../components/portfolio/ProjectList';
 import PortfolioStats from '../components/portfolio/PortfolioStats';
+import PortfolioCharts from '../components/portfolio/PortfolioCharts';
 import InvestmentFilters from '../components/portfolio/InvestmentFilters';
 import PortfolioToolbar from '../components/portfolio/PortfolioToolbar';
 import { useAIDataRefresh } from '../hooks/useAIDataRefresh';
@@ -27,6 +29,7 @@ const PortfolioPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('value-desc');
   const [viewMode, setViewMode] = useState('grid');
+  const [refreshingAll, setRefreshingAll] = useState(false);
 
   const handleInvestmentSuccess = () => {
     setShowInvestmentModal(false);
@@ -39,20 +42,40 @@ const PortfolioPage = () => {
     setShowInvestmentModal(true);
   };
 
-  const handleCloseModal = () => {
+  const handleCloseInvestmentModal = () => {
     setShowInvestmentModal(false);
     setEditingInvestment(null);
   };
 
-  // 监听AI数据更新事件
   const handleDataUpdate = useCallback(() => {
     setRefreshKey(prev => prev + 1);
   }, []);
   useAIDataRefresh(handleDataUpdate);
 
+  const handleRefreshAllPrices = async () => {
+    setRefreshingAll(true);
+    try {
+      const result = await portfolioApi.refreshAllPrices();
+      if (result.updated.length > 0) {
+        toast.success(`Updated ${result.updated.length} prices`);
+        setRefreshKey(prev => prev + 1);
+      }
+      if (result.failed.length > 0) {
+        toast.error(`Failed: ${result.failed.join(', ')}`);
+      }
+      if (result.updated.length === 0 && result.failed.length === 0) {
+        toast('No investments to refresh');
+      }
+    } catch {
+      toast.error('Failed to refresh prices');
+    } finally {
+      setRefreshingAll(false);
+    }
+  };
+
   const tabs = [
-    { id: 'investments', label: 'Investments' },
-    { id: 'projects', label: 'Projects' }
+    { id: 'investments', label: 'Holdings' },
+    { id: 'analytics', label: 'Analytics' }
   ];
 
   return (
@@ -63,13 +86,19 @@ const PortfolioPage = () => {
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">Portfolio</h1>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">Manage your investments and projects</p>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">Manage your investments</p>
             </div>
             {activeTab === 'investments' && (
-              <Button onClick={() => setShowInvestmentModal(true)} className="mt-1">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Investment
-              </Button>
+              <div className="flex gap-2 mt-1">
+                <Button variant="outline" onClick={handleRefreshAllPrices} disabled={refreshingAll}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${refreshingAll ? 'animate-spin' : ''}`} />
+                  Refresh Prices
+                </Button>
+                <Button onClick={() => setShowInvestmentModal(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Investment
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -96,13 +125,8 @@ const PortfolioPage = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="container mx-auto px-4 py-6">
-        <PortfolioStats refresh={refreshKey} />
-      </div>
-
       {/* Content Area */}
-      <div className="container mx-auto px-4 pb-6">
+      <div className="container mx-auto px-4 py-6">
         {activeTab === 'investments' && (
           <div className="flex gap-6">
             {/* Sidebar Filters - Desktop */}
@@ -160,22 +184,24 @@ const PortfolioPage = () => {
           </div>
         )}
 
-        {activeTab === 'projects' && (
-          <Card className="shadow-sm">
-            <ProjectList />
-          </Card>
+        {activeTab === 'analytics' && (
+          <div className="space-y-6">
+            <PortfolioStats refresh={refreshKey} />
+            <PortfolioCharts refresh={refreshKey} />
+          </div>
         )}
       </div>
 
+      {/* Investment Modal */}
       <Modal
         isOpen={showInvestmentModal}
-        onClose={handleCloseModal}
+        onClose={handleCloseInvestmentModal}
         title={editingInvestment ? "Edit Investment" : "Add New Investment"}
       >
         <InvestmentForm
           investment={editingInvestment}
           onSuccess={handleInvestmentSuccess}
-          onCancel={handleCloseModal}
+          onCancel={handleCloseInvestmentModal}
         />
       </Modal>
     </div>

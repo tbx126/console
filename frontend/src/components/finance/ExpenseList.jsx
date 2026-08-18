@@ -1,96 +1,116 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Trash2, Edit } from 'lucide-react';
 import financeApi from '../../services/financeApi';
-import { getCurrencySymbol, convertAmount as convertCurrency } from '../../lib/currency';
+import { convertAmount as convertCurrency, getCurrencySymbol } from '../../lib/currency';
+import { isWithinDateRange } from '../../lib/dateFilters';
 
-const ExpenseList = ({ refresh, filters, searchQuery, sortBy, viewMode, onEdit, displayCurrency = 'CNY', currencySymbol = '¥', exchangeRates }) => {
+const ExpenseList = ({
+  refresh,
+  filters,
+  searchQuery,
+  sortBy,
+  viewMode,
+  onEdit,
+  displayCurrency = 'CNY',
+  currencySymbol = getCurrencySymbol(displayCurrency),
+  exchangeRates
+}) => {
   const [expenses, setExpenses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    loadData();
-  }, [refresh]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
+
       const [expensesData, categoriesData] = await Promise.all([
         financeApi.getExpenses(),
         financeApi.getCategories()
       ]);
+
       setExpenses(expensesData);
       setCategories(categoriesData);
-    } catch (err) {
+    } catch {
       setError('Failed to load expenses');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData, refresh]);
 
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this expense?')) return;
 
     try {
       await financeApi.deleteExpense(id);
-      loadData();
-    } catch (err) {
+      await loadData();
+    } catch {
       alert('Failed to delete expense');
     }
   };
 
   const getCategoryInfo = (categoryId) => {
-    return categories.find(cat => cat.id === categoryId) || { name: categoryId, icon: '💰', color: '#6B7280' };
+    return categories.find((category) => category.id === categoryId) || {
+      name: categoryId,
+      icon: '?',
+      color: '#6B7280'
+    };
   };
 
-  // 转换金额，相同货币返回 null（不显示转换）
   const getConvertedDisplay = (amount, fromCurrency = 'USD') => {
-    if (!exchangeRates || !amount) return null;
-    if (fromCurrency === displayCurrency) return null;
+    if (!exchangeRates || !amount || fromCurrency === displayCurrency) {
+      return null;
+    }
+
     return convertCurrency(amount, fromCurrency, displayCurrency, exchangeRates);
   };
 
-  // Filter, search and sort expenses
   const processedExpenses = useMemo(() => {
     let result = [...expenses];
 
-    // Apply category filter
-    if (filters?.categories && filters.categories.length > 0) {
-      result = result.filter(exp => filters.categories.includes(exp.category));
+    if (filters?.categories?.length > 0) {
+      result = result.filter((expense) => filters.categories.includes(expense.category));
     }
 
-    // Apply amount filter
-    if (filters?.maxAmount) {
-      result = result.filter(exp => exp.amount <= filters.maxAmount);
+    if (filters?.dateRange) {
+      result = result.filter((expense) => isWithinDateRange(expense.date, filters.dateRange));
     }
 
-    // Apply search query
+    if (typeof filters?.minAmount === 'number' && filters.minAmount > 0) {
+      result = result.filter((expense) => expense.amount >= filters.minAmount);
+    }
+
+    if (typeof filters?.maxAmount === 'number') {
+      result = result.filter((expense) => expense.amount <= filters.maxAmount);
+    }
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      result = result.filter(exp =>
-        exp.merchant?.toLowerCase().includes(query) ||
-        exp.notes?.toLowerCase().includes(query)
+      result = result.filter((expense) =>
+        expense.merchant?.toLowerCase().includes(query) ||
+        expense.notes?.toLowerCase().includes(query)
       );
     }
 
-    // Apply sorting
-    if (sortBy) {
-      result.sort((a, b) => {
-        switch (sortBy) {
-          case 'date-desc':
-            return new Date(b.date) - new Date(a.date);
-          case 'date-asc':
-            return new Date(a.date) - new Date(b.date);
-          case 'amount-desc':
-            return b.amount - a.amount;
-          case 'amount-asc':
-            return a.amount - b.amount;
-          default:
-            return 0;
-        }
-      });
-    }
+    result.sort((left, right) => {
+      switch (sortBy) {
+        case 'date-desc':
+          return new Date(right.date) - new Date(left.date);
+        case 'date-asc':
+          return new Date(left.date) - new Date(right.date);
+        case 'amount-desc':
+          return right.amount - left.amount;
+        case 'amount-asc':
+          return left.amount - right.amount;
+        default:
+          return 0;
+      }
+    });
 
     return result;
   }, [expenses, filters, searchQuery, sortBy]);
@@ -110,19 +130,23 @@ const ExpenseList = ({ refresh, filters, searchQuery, sortBy, viewMode, onEdit, 
           No expenses found. Try adjusting your filters.
         </div>
       ) : (
-        <div className="grid grid-cols-4 gap-3">
-          {processedExpenses.map(expense => {
+        <div className={viewMode === 'list' ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3'}>
+          {processedExpenses.map((expense) => {
             const category = getCategoryInfo(expense.category);
+            const converted = getConvertedDisplay(expense.amount, expense.currency || 'USD');
+
             return (
               <div
                 key={expense.id}
                 className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:shadow-md transition-shadow"
               >
-                {/* Top: Icon + Category Label + Amount */}
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">{category.icon}</span>
-                    <span className="inline-block px-1.5 py-0.5 rounded text-xs" style={{ backgroundColor: category.color + '20', color: category.color }}>
+                    <span
+                      className="inline-block px-1.5 py-0.5 rounded text-xs"
+                      style={{ backgroundColor: `${category.color}20`, color: category.color }}
+                    >
                       {category.name}
                     </span>
                   </div>
@@ -130,38 +154,29 @@ const ExpenseList = ({ refresh, filters, searchQuery, sortBy, viewMode, onEdit, 
                     <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
                       {getCurrencySymbol(expense.currency || 'USD')}{expense.amount.toFixed(2)}
                     </div>
-                    {(() => {
-                      const converted = getConvertedDisplay(expense.amount, expense.currency || 'USD');
-                      if (converted !== null) {
-                        return (
-                          <div className="text-xs text-zinc-400 italic absolute right-0 top-full">
-                            ≈ {currencySymbol}{converted.toFixed(2)}
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
+                    {converted !== null && (
+                      <div className="text-xs text-zinc-400 italic absolute right-0 top-full">
+                        ~{currencySymbol}{converted.toFixed(2)}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Middle: Merchant Name */}
                 <div className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm mb-1 truncate">
                   {expense.merchant}
                 </div>
 
-                {/* Notes (if exists) */}
                 {expense.notes && (
                   <div className="text-xs text-zinc-500 italic mb-2 truncate" title={expense.notes}>
                     {expense.notes}
                   </div>
                 )}
 
-                {/* Bottom: Date + Edit + Delete */}
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-zinc-500">{new Date(expense.date).toLocaleDateString()}</span>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => onEdit && onEdit(expense)}
+                      onClick={() => onEdit?.(expense)}
                       className="text-zinc-400 hover:text-violet-600 transition-colors"
                       title="Edit"
                     >

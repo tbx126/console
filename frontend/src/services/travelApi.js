@@ -1,14 +1,14 @@
-import apiClient from './api';
+import apiClient, { cachedGet } from './api';
 
 const travelApi = {
   // Flights
   getFlights: async () => {
-    const response = await apiClient.get('/travel/flights');
+    const response = await cachedGet('/travel/flights');
     return response.data;
   },
 
   getFlight: async (id) => {
-    const response = await apiClient.get(`/travel/flights/${id}`);
+    const response = await cachedGet(`/travel/flights/${id}`);
     return response.data;
   },
 
@@ -29,25 +29,25 @@ const travelApi = {
 
   // Airline statistics
   getAirlineStats: async () => {
-    const response = await apiClient.get('/travel/airlines');
+    const response = await cachedGet('/travel/airlines');
     return response.data;
   },
 
   // Achievements
   getAchievements: async () => {
-    const response = await apiClient.get('/travel/achievements');
+    const response = await cachedGet('/travel/achievements');
     return response.data;
   },
 
   // Statistics
   getStatistics: async () => {
-    const response = await apiClient.get('/travel/statistics');
+    const response = await cachedGet('/travel/statistics');
     return response.data;
   },
 
   // Flight lookup
   lookupFlight: async (flightNumber, date) => {
-    const response = await apiClient.get('/travel/lookup', {
+    const response = await cachedGet('/travel/lookup', {
       params: { flight_number: flightNumber, date }
     });
     return response.data;

@@ -1,16 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import financeApi from '../../services/financeApi';
 
-const BudgetOverview = () => {
+const BudgetOverview = ({ refresh, currencySymbol = '¥' }) => {
   const [statistics, setStatistics] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [stats, cats] = await Promise.all([
         financeApi.getStatistics(),
@@ -23,7 +19,11 @@ const BudgetOverview = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData, refresh]);
 
   const getCategoryInfo = (categoryId) => {
     return categories.find(cat => cat.id === categoryId) || { name: categoryId, icon: '💰', color: '#6B7280' };
@@ -45,13 +45,13 @@ const BudgetOverview = () => {
         <div className="bg-blue-50 rounded-lg p-4">
           <div className="text-sm text-blue-600 font-medium">Total Income</div>
           <div className="text-2xl font-bold text-blue-900">
-            ${statistics.total_income.toFixed(2)}
+            {currencySymbol}{statistics.total_income.toFixed(2)}
           </div>
         </div>
         <div className="bg-red-50 rounded-lg p-4">
           <div className="text-sm text-red-600 font-medium">Total Expenses</div>
           <div className="text-2xl font-bold text-red-900">
-            ${statistics.total_expenses.toFixed(2)}
+            {currencySymbol}{statistics.total_expenses.toFixed(2)}
           </div>
         </div>
         <div className={`rounded-lg p-4 ${statistics.net_balance >= 0 ? 'bg-green-50' : 'bg-orange-50'}`}>
@@ -59,7 +59,7 @@ const BudgetOverview = () => {
             Net Balance
           </div>
           <div className={`text-2xl font-bold ${statistics.net_balance >= 0 ? 'text-green-900' : 'text-orange-900'}`}>
-            ${statistics.net_balance.toFixed(2)}
+            {currencySymbol}{statistics.net_balance.toFixed(2)}
           </div>
         </div>
       </div>
@@ -82,7 +82,7 @@ const BudgetOverview = () => {
                   </div>
                   <div className="text-right">
                     <div className="text-sm text-gray-600">
-                      ${budget.spent.toFixed(2)} / ${budget.limit.toFixed(2)}
+                      {currencySymbol}{budget.spent.toFixed(2)} / {currencySymbol}{budget.limit.toFixed(2)}
                     </div>
                     <div className={`text-xs font-medium ${isOverBudget ? 'text-red-600' : isNearLimit ? 'text-orange-600' : 'text-green-600'}`}>
                       {percentage.toFixed(1)}%
@@ -97,7 +97,7 @@ const BudgetOverview = () => {
                 </div>
                 {isOverBudget && (
                   <div className="mt-2 text-xs text-red-600">
-                    Over budget by ${(budget.spent - budget.limit).toFixed(2)}
+                    Over budget by {currencySymbol}{(budget.spent - budget.limit).toFixed(2)}
                   </div>
                 )}
               </div>

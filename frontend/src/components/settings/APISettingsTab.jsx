@@ -186,7 +186,7 @@ const APISettingsTab = () => {
       const response = await fetch('/api/config/api-keys');
       const data = await response.json();
       setApiKeys(data);
-    } catch (error) {
+    } catch {
       toast.error('Failed to load API keys');
     } finally {
       setLoading(false);
@@ -213,7 +213,7 @@ const APISettingsTab = () => {
       } else {
         toast.error('Failed to save');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to save');
     } finally {
       setSaving(false);

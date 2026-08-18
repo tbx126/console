@@ -52,6 +52,7 @@ class Income(BaseModel):
     """Income model"""
     id: Optional[str] = None
     amount: float = Field(..., gt=0)
+    currency: str = "USD"  # USD, EUR, CNY, JPY, GBP, SGD
     source: str
     type: IncomeType
     date: str  # ISO format date string

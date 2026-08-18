@@ -4,7 +4,7 @@ from app.models.travel import Flight, AirlineStats, Achievement, TravelStatistic
 from app.services.data_manager import data_manager
 from app.services.airport_data_service import airport_data_service
 from app.config import settings
-import uuid
+from app.utils.crud_helpers import get_all_items, get_item_by_id, create_item, update_item_by_id, delete_item_by_id
 from collections import defaultdict
 
 
@@ -17,63 +17,32 @@ class TravelService:
     # Flight operations
     def get_flights(self) -> List[Flight]:
         """Get all flights"""
-        data = data_manager.read_data(self.data_file)
-        return [Flight(**flight) for flight in data.get("flights", [])]
+        return get_all_items(data_manager, self.data_file, "flights", Flight)
 
     def get_flight(self, flight_id: str) -> Optional[Flight]:
         """Get flight by ID"""
-        flights = self.get_flights()
-        for flight in flights:
-            if flight.id == flight_id:
-                return flight
-        return None
+        return get_item_by_id(data_manager, self.data_file, "flights", flight_id, Flight)
 
     def create_flight(self, flight: Flight) -> Flight:
         """Create new flight"""
-        data = data_manager.read_data(self.data_file)
-        flight.id = str(uuid.uuid4())
-        flight.created_at = datetime.now().isoformat()
-
-        if "flights" not in data:
-            data["flights"] = []
-
-        data["flights"].append(flight.model_dump())
-        data_manager.write_data(self.data_file, data)
-
-        # Update airline statistics
-        self._update_airline_stats(data)
-
-        return flight
+        return create_item(
+            data_manager, self.data_file, "flights", flight,
+            post_update=self._update_airline_stats,
+        )
 
     def update_flight(self, flight_id: str, flight: Flight) -> Optional[Flight]:
         """Update flight"""
-        data = data_manager.read_data(self.data_file)
-        flights = data.get("flights", [])
-
-        for i, flt in enumerate(flights):
-            if flt["id"] == flight_id:
-                flight.id = flight_id
-                flight.created_at = flt.get("created_at", datetime.now().isoformat())
-                flights[i] = flight.model_dump()
-                data_manager.write_data(self.data_file, data)
-                self._update_airline_stats(data)
-                return flight
-
-        return None
+        return update_item_by_id(
+            data_manager, self.data_file, "flights", flight_id, flight, Flight,
+            post_update=self._update_airline_stats,
+        )
 
     def delete_flight(self, flight_id: str) -> bool:
         """Delete flight"""
-        data = data_manager.read_data(self.data_file)
-        flights = data.get("flights", [])
-
-        for i, flt in enumerate(flights):
-            if flt["id"] == flight_id:
-                flights.pop(i)
-                data_manager.write_data(self.data_file, data)
-                self._update_airline_stats(data)
-                return True
-
-        return False
+        return delete_item_by_id(
+            data_manager, self.data_file, "flights", flight_id,
+            post_update=self._update_airline_stats,
+        )
 
     def _update_airline_stats(self, data: Dict):
         """Update airline statistics based on flights"""
@@ -111,7 +80,6 @@ class TravelService:
             }
 
         data["airlines"] = airlines
-        data_manager.write_data(self.data_file, data)
 
     # Airline statistics
     def get_airline_stats(self) -> List[AirlineStats]:

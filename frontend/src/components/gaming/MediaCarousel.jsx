@@ -1,6 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Volume2, VolumeX, X, Maximize2 } from 'lucide-react';
-import Hls from 'hls.js';
 import { createPortal } from 'react-dom';
 
 // Convert local cache path to full URL
@@ -20,26 +19,26 @@ function HlsVideoPlayer({ src, poster, onEnded, fullscreen = false }) {
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) return;
+    let cancelled = false;
+    const play = () => video.play().catch(() => {});
 
-    if (Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
-      });
-      hlsRef.current = hls;
-      hls.loadSource(src);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => {});
-      });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src;
-      video.addEventListener('loadedmetadata', () => {
-        video.play().catch(() => {});
-      });
+      video.addEventListener('loadedmetadata', play);
+    } else {
+      import('hls.js').then(({ default: Hls }) => {
+        if (cancelled || !Hls.isSupported()) return;
+        const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+        hlsRef.current = hls;
+        hls.loadSource(src);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, play);
+      }).catch(() => {});
     }
 
     return () => {
+      cancelled = true;
+      video.removeEventListener('loadedmetadata', play);
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;

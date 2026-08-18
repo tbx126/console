@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { TrendingUp, Briefcase, DollarSign, Target } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { TrendingUp, Briefcase, Wallet, Target } from 'lucide-react';
 import { StatCard } from '../ui/StatCard';
 import { Skeleton } from '../ui/Skeleton';
 import portfolioApi from '../../services/portfolioApi';
@@ -9,20 +9,29 @@ export default function PortfolioStats({ refresh }) {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchStats = async () => {
       try {
-        // 仅首次加载时显示 loading 状态
-        if (!stats) setLoading(true);
+        setLoading(true);
         const data = await portfolioApi.getStatistics();
-        setStats(data);
+        if (!cancelled) {
+          setStats(data);
+        }
       } catch (error) {
         console.error('Failed to fetch portfolio stats:', error);
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchStats();
+    void fetchStats();
+
+    return () => {
+      cancelled = true;
+    };
   }, [refresh]);
 
   if (loading) {
@@ -36,22 +45,22 @@ export default function PortfolioStats({ refresh }) {
     );
   }
 
-  const totalValue = stats?.total_value || 0;
-  const totalGain = stats?.total_gain || 0;
-  const gainPercentage = stats?.gain_percentage || 0;
+  const totalValue = stats?.total_investment_value || 0;
+  const totalGain = stats?.total_gain_loss || 0;
+  const gainPercentage = stats?.total_gain_loss_percentage || 0;
   const activeProjects = stats?.active_projects || 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in duration-300">
       <StatCard
         title="Total Value"
-        value={`$${totalValue.toLocaleString()}`}
+        value={`¥${totalValue.toLocaleString()}`}
         description="Portfolio value"
-        icon={DollarSign}
+        icon={Wallet}
       />
       <StatCard
         title="Total Gain"
-        value={`$${totalGain.toLocaleString()}`}
+        value={`¥${totalGain.toLocaleString()}`}
         description={`${gainPercentage >= 0 ? '+' : ''}${gainPercentage.toFixed(2)}%`}
         icon={TrendingUp}
         trend={totalGain !== 0 && {

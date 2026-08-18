@@ -5,7 +5,7 @@ import api from '../../services/api';
 
 const mapContainerStyle = {
   width: '100%',
-  height: '600px'
+  height: '100%'
 };
 
 const defaultCenter = {
@@ -296,7 +296,7 @@ const FlightMapInner = ({ apiKey, mapData }) => {
         {/* Google Map */}
         <div className="flex-1 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700">
           <GoogleMap
-            mapContainerStyle={{ width: '100%', height: '100%' }}
+            mapContainerStyle={mapContainerStyle}
             center={defaultCenter}
             zoom={3}
             options={mapOptions}
@@ -323,7 +323,7 @@ const FlightMapInner = ({ apiKey, mapData }) => {
           ))}
 
           {/* Flight Routes */}
-          {mapData.routes.map((route, index) => {
+          {mapData.routes.map((route) => {
             // Calculate curve offset for routes with same origin-destination pair
             const routeKey = [route.origin, route.destination].sort().join('-');
             const sameRoutes = mapData.routes.filter(r =>

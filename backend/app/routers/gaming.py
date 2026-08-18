@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from app.services.gaming_service import gaming_service
 from app.services.gaming_cache_service import gaming_cache_service
 from app.models.gaming import GamingStatistics
+from app.config import settings
 
 router = APIRouter()
 
@@ -33,7 +34,7 @@ async def get_statistics():
 @router.post("/sync")
 async def sync_games(background_tasks: BackgroundTasks):
     """Force sync games from Steam API and cache uncached games in background"""
-    games = await gaming_service.fetch_owned_games()
+    games = await gaming_service.fetch_owned_games(force_refresh=True)
 
     # Find uncached or expired games
     uncached = []
@@ -48,14 +49,16 @@ async def sync_games(background_tasks: BackgroundTasks):
             uncached.append(game)
 
     # Start background caching if there are uncached games
-    if uncached and not _cache_task_state["running"]:
+    caching_started = bool(uncached and not _cache_task_state["running"])
+    if caching_started:
+        _cache_task_state["running"] = True
         background_tasks.add_task(cache_games_background, uncached)
 
     return {
         "message": "Sync completed",
         "games_count": len(games),
         "uncached_count": len(uncached),
-        "caching_started": len(uncached) > 0 and not _cache_task_state["running"]
+        "caching_started": caching_started,
     }
 
 
@@ -115,8 +118,10 @@ async def clear_game_cache(appid: int):
 async def refresh_game_cache(appid: int):
     """Force refresh cache for a specific game"""
     gaming_cache_service.clear_cache(appid)
-    details = await gaming_service.fetch_game_details(appid)
-    achievements = await gaming_service.fetch_detailed_achievements(appid)
+    details, achievements = await asyncio.gather(
+        gaming_service.fetch_game_details(appid),
+        gaming_service.fetch_detailed_achievements(appid),
+    )
     return {
         "message": "Cache refreshed",
         "details_cached": details is not None,
@@ -130,27 +135,55 @@ async def get_cache_sync_status():
     return _cache_task_state.copy()
 
 
+@router.get("/cache/info")
+async def get_cache_info():
+    """Get in-memory cache metrics without scanning the media tree."""
+    return gaming_cache_service.cache_info()
+
+
+@router.post("/cache/prune")
+async def prune_cache():
+    """Enforce the configured media-cache capacity immediately."""
+    return await asyncio.to_thread(gaming_cache_service.prune_media_cache)
+
+
 async def cache_games_background(games: list):
     """Background task to cache all uncached games"""
     global _cache_task_state
-    _cache_task_state["running"] = True
     _cache_task_state["total"] = len(games)
     _cache_task_state["completed"] = 0
     _cache_task_state["errors"] = []
 
+    queue = asyncio.Queue()
     for game in games:
-        appid = game.get("appid")
-        name = game.get("name", f"Game {appid}")
-        _cache_task_state["current_game"] = name
+        queue.put_nowait(game)
 
-        try:
-            await gaming_service.fetch_game_details(appid)
-            await gaming_service.fetch_detailed_achievements(appid)
-        except Exception as e:
-            _cache_task_state["errors"].append({"appid": appid, "error": str(e)})
+    async def worker():
+        while True:
+            try:
+                game = queue.get_nowait()
+            except asyncio.QueueEmpty:
+                return
 
-        _cache_task_state["completed"] += 1
-        await asyncio.sleep(0.5)  # Rate limiting
+            appid = game.get("appid")
+            _cache_task_state["current_game"] = game.get("name", f"Game {appid}")
+            try:
+                await asyncio.gather(
+                    gaming_service.fetch_game_details(appid),
+                    gaming_service.fetch_detailed_achievements(appid),
+                )
+            except Exception as error:
+                _cache_task_state["errors"].append(
+                    {"appid": appid, "error": str(error)}
+                )
+            finally:
+                _cache_task_state["completed"] += 1
+                queue.task_done()
+            await asyncio.sleep(0.25)
 
-    _cache_task_state["running"] = False
-    _cache_task_state["current_game"] = None
+    try:
+        worker_count = min(settings.gaming_cache_game_concurrency, len(games))
+        await asyncio.gather(*(worker() for _ in range(worker_count)))
+    finally:
+        _cache_task_state["running"] = False
+        _cache_task_state["current_game"] = None

@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Layers, Settings, Key } from 'lucide-react';
+import { Layers, Settings, Key, Database } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import LLMConfigManager from '../components/settings/LLMConfigManager';
 import APISettingsTab from '../components/settings/APISettingsTab';
+import DataManagementTab from '../components/settings/DataManagementTab';
 
 const TABS = [
   { id: 'profiles', label: 'Model Profiles', icon: Layers },
   { id: 'api', label: 'API Keys', icon: Key },
+  { id: 'data', label: 'Data', icon: Database },
   { id: 'general', label: 'General', icon: Settings, disabled: true }
 ];
 
@@ -45,7 +47,7 @@ const SettingsPage = () => {
         </div>
 
         {/* Tab Content */}
-        <Card className="flex-1 max-w-2xl">
+        <Card className="flex-1 max-w-3xl">
           <CardHeader>
             <CardTitle>
               {TABS.find(t => t.id === activeTab)?.label}
@@ -57,6 +59,9 @@ const SettingsPage = () => {
             )}
             {activeTab === 'api' && (
               <APISettingsTab />
+            )}
+            {activeTab === 'data' && (
+              <DataManagementTab />
             )}
             {activeTab === 'general' && (
               <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">

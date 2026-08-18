@@ -1,8 +1,8 @@
-import httpx
 import json
 import re
 from typing import List, Dict, Any, AsyncGenerator, Optional
 from app.models.ai_assistant import LLMConfigProfile, ChatMessage, ParsedData, ParsedDataType
+from app.services.http_client import http_client
 
 
 class LLMService:
@@ -142,11 +142,13 @@ class LLMService:
         if max_tokens is not None:
             payload["max_tokens"] = max_tokens
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            response = await client.post(url, headers=headers, json=payload)
-            response.raise_for_status()
-            data = response.json()
-            return data["choices"][0]["message"]["content"]
+        client = await http_client.get()
+        response = await client.post(
+            url, headers=headers, json=payload, timeout=self.timeout
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data["choices"][0]["message"]["content"]
 
     async def _stream_openai_compatible(
         self,
@@ -178,23 +180,25 @@ class LLMService:
         if max_tokens is not None:
             payload["max_tokens"] = max_tokens
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            async with client.stream("POST", url, headers=headers, json=payload) as response:
-                if response.status_code != 200:
-                    error_body = await response.aread()
-                    raise Exception(f"API Error: {response.status_code} - {error_body.decode()}")
-                async for line in response.aiter_lines():
-                    if line.startswith("data: "):
-                        data_str = line[6:]
-                        if data_str == "[DONE]":
-                            break
-                        try:
-                            data = json.loads(data_str)
-                            delta = data["choices"][0].get("delta", {})
-                            if "content" in delta:
-                                yield delta["content"]
-                        except json.JSONDecodeError:
-                            continue
+        client = await http_client.get()
+        async with client.stream(
+            "POST", url, headers=headers, json=payload, timeout=120.0
+        ) as response:
+            if response.status_code != 200:
+                error_body = await response.aread()
+                raise Exception(f"API Error: {response.status_code} - {error_body.decode()}")
+            async for line in response.aiter_lines():
+                if line.startswith("data: "):
+                    data_str = line[6:]
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        data = json.loads(data_str)
+                        delta = data["choices"][0].get("delta", {})
+                        if "content" in delta:
+                            yield delta["content"]
+                    except json.JSONDecodeError:
+                        continue
 
     async def parse_response(self, response: str) -> ParsedData | None:
         """从响应中解析结构化数据"""

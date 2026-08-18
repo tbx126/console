@@ -1,0 +1,16 @@
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - ./backend/data:/app/data
+    environment:
+      - CORS_ORIGINS=["http://localhost","http://localhost:8080"]
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
