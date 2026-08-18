@@ -1,14 +1,14 @@
-import apiClient from './api';
+import apiClient, { cachedGet } from './api';
 
 const financeApi = {
   // Expenses
   getExpenses: async () => {
-    const response = await apiClient.get('/finance/expenses');
+    const response = await cachedGet('/finance/expenses');
     return response.data;
   },
 
   getExpense: async (id) => {
-    const response = await apiClient.get(`/finance/expenses/${id}`);
+    const response = await cachedGet(`/finance/expenses/${id}`);
     return response.data;
   },
 
@@ -29,7 +29,7 @@ const financeApi = {
 
   // Income
   getIncome: async () => {
-    const response = await apiClient.get('/finance/income');
+    const response = await cachedGet('/finance/income');
     return response.data;
   },
 
@@ -38,9 +38,19 @@ const financeApi = {
     return response.data;
   },
 
+  updateIncome: async (id, income) => {
+    const response = await apiClient.put(`/finance/income/${id}`, income);
+    return response.data;
+  },
+
+  deleteIncome: async (id) => {
+    const response = await apiClient.delete(`/finance/income/${id}`);
+    return response.data;
+  },
+
   // Bills
   getBills: async () => {
-    const response = await apiClient.get('/finance/bills');
+    const response = await cachedGet('/finance/bills');
     return response.data;
   },
 
@@ -49,9 +59,19 @@ const financeApi = {
     return response.data;
   },
 
+  updateBill: async (id, bill) => {
+    const response = await apiClient.put(`/finance/bills/${id}`, bill);
+    return response.data;
+  },
+
+  deleteBill: async (id) => {
+    const response = await apiClient.delete(`/finance/bills/${id}`);
+    return response.data;
+  },
+
   // Budgets
   getBudgets: async () => {
-    const response = await apiClient.get('/finance/budgets');
+    const response = await cachedGet('/finance/budgets');
     return response.data;
   },
 
@@ -60,28 +80,38 @@ const financeApi = {
     return response.data;
   },
 
+  updateBudget: async (id, budget) => {
+    const response = await apiClient.put(`/finance/budgets/${id}`, budget);
+    return response.data;
+  },
+
+  deleteBudget: async (id) => {
+    const response = await apiClient.delete(`/finance/budgets/${id}`);
+    return response.data;
+  },
+
   // Categories
   getCategories: async () => {
-    const response = await apiClient.get('/finance/categories');
+    const response = await cachedGet('/finance/categories');
     return response.data;
   },
 
   // Statistics
   getStatistics: async () => {
-    const response = await apiClient.get('/finance/statistics');
+    const response = await cachedGet('/finance/statistics');
     return response.data;
   },
 
   // Exchange Rates
   getExchangeRates: async (base = 'USD') => {
-    const response = await apiClient.get(`/finance/exchange-rates?base=${base}`);
+    const response = await cachedGet('/finance/exchange-rates', { params: { base } });
     return response.data;
   },
 
   convertCurrency: async (amount, fromCurrency, toCurrency) => {
-    const response = await apiClient.get(
-      `/finance/convert?amount=${amount}&from_currency=${fromCurrency}&to_currency=${toCurrency}`
-    );
+    const response = await cachedGet('/finance/convert', {
+      params: { amount, from_currency: fromCurrency, to_currency: toCurrency }
+    });
     return response.data;
   },
 };

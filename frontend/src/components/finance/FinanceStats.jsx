@@ -1,32 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Wallet, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react';
 import { StatCard } from '../ui/StatCard';
 import { Skeleton } from '../ui/Skeleton';
 import financeApi from '../../services/financeApi';
-import { convertAmount as convertCurrency } from '../../lib/currency';
 
-export default function FinanceStats({ refresh, displayCurrency = 'CNY', currencySymbol = '¥', exchangeRates }) {
+// Backend already returns all values in CNY — no conversion needed here
+export default function FinanceStats({ refresh, currencySymbol = '¥' }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
 
-  const convertAmount = (amount, fromCurrency = 'USD') =>
-    convertCurrency(amount, fromCurrency, displayCurrency, exchangeRates);
-
   useEffect(() => {
+    let cancelled = false;
+
     const fetchStats = async () => {
       try {
-        // 仅首次加载时显示 loading 状态
-        if (!stats) setLoading(true);
+        setLoading(true);
         const data = await financeApi.getStatistics();
-        setStats(data);
+        if (!cancelled) {
+          setStats(data);
+        }
       } catch (error) {
         console.error('Failed to fetch finance stats:', error);
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchStats();
+    void fetchStats();
+
+    return () => {
+      cancelled = true;
+    };
   }, [refresh]);
 
   if (loading) {
@@ -40,9 +46,9 @@ export default function FinanceStats({ refresh, displayCurrency = 'CNY', currenc
     );
   }
 
-  const totalExpenses = convertAmount(stats?.total_expenses || 0);
-  const totalIncome = convertAmount(stats?.total_income || 0);
-  const balance = totalIncome - totalExpenses;
+  const totalExpenses = stats?.total_expenses || 0;
+  const totalIncome = stats?.total_income || 0;
+  const balance = stats?.net_balance ?? (totalIncome - totalExpenses);
   const budgetUsage = stats?.budget_usage || 0;
 
   return (
@@ -50,7 +56,7 @@ export default function FinanceStats({ refresh, displayCurrency = 'CNY', currenc
       <StatCard
         title="Total Expenses"
         value={`${currencySymbol}${totalExpenses.toFixed(2)}`}
-        description="This month"
+        description="All time"
         icon={TrendingDown}
         trend={stats?.expense_trend && {
           value: stats.expense_trend,
@@ -60,7 +66,7 @@ export default function FinanceStats({ refresh, displayCurrency = 'CNY', currenc
       <StatCard
         title="Total Income"
         value={`${currencySymbol}${totalIncome.toFixed(2)}`}
-        description="This month"
+        description="All time"
         icon={TrendingUp}
         trend={stats?.income_trend && {
           value: stats.income_trend,

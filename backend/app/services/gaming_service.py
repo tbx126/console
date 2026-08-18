@@ -1,9 +1,11 @@
 """Gaming service for Steam API integration"""
+import asyncio
 from typing import List, Dict, Optional
-import httpx
 from app.models.gaming import Game, Achievement, GamingStatistics
 from app.services.data_manager import data_manager
 from app.services.gaming_cache_service import gaming_cache_service
+from app.services.http_client import http_client
+from app.utils.cache import AsyncSingleFlight
 from app.config import settings
 
 
@@ -15,6 +17,7 @@ class GamingService:
 
     def __init__(self):
         self.data_file = "gaming.json"
+        self._requests = AsyncSingleFlight()
 
     def _get_steam_config(self) -> Dict:
         """Get Steam API configuration"""
@@ -32,15 +35,29 @@ class GamingService:
 
     def _save_games(self, games: List[Dict]):
         """Save games to local storage"""
-        data = data_manager.read_data(self.data_file)
-        data["games"] = games
-        data_manager.write_data(self.data_file, data)
+        def update(data: Dict) -> None:
+            data["games"] = games
 
-    async def fetch_owned_games(self) -> List[Dict]:
+        data_manager.update_data(self.data_file, update)
+
+    async def fetch_owned_games(
+        self, force_refresh: bool = False, _coalesced: bool = False
+    ) -> List[Dict]:
         """Fetch owned games from Steam API"""
+        cached_games = self._get_cached_games()
+        if cached_games and not force_refresh:
+            return cached_games
+
         config = self._get_steam_config()
         if not config["api_key"] or not config["steam_id"]:
-            return self._get_cached_games()
+            return cached_games
+        if not _coalesced:
+            return await self._requests.run(
+                "owned-games",
+                lambda: self.fetch_owned_games(
+                    force_refresh=True, _coalesced=True
+                ),
+            )
 
         url = f"{self.STEAM_API_BASE}/IPlayerService/GetOwnedGames/v1/"
         params = {
@@ -51,23 +68,30 @@ class GamingService:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(url, params=params)
-                response.raise_for_status()
-                data = response.json()
-                games = data.get("response", {}).get("games", [])
-                self._save_games(games)
-                return games
+            client = await http_client.get()
+            response = await client.get(url, params=params, timeout=30.0)
+            response.raise_for_status()
+            data = response.json()
+            games = data.get("response", {}).get("games", [])
+            self._save_games(games)
+            return games
         except Exception as e:
             print(f"Failed to fetch Steam games: {e}")
-            return self._get_cached_games()
+            return cached_games
 
-    async def fetch_game_achievements(self, appid: int) -> List[Dict]:
+    async def fetch_game_achievements(
+        self, appid: int, _coalesced: bool = False
+    ) -> List[Dict]:
         """Fetch achievements for a specific game"""
         # Check cache first
         cached = gaming_cache_service.get_cached_raw_achievements(appid)
         if cached is not None:
             return cached
+        if not _coalesced:
+            return await self._requests.run(
+                f"raw-achievements:{appid}",
+                lambda: self.fetch_game_achievements(appid, _coalesced=True),
+            )
 
         config = self._get_steam_config()
         if not config["api_key"] or not config["steam_id"]:
@@ -81,15 +105,15 @@ class GamingService:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(url, params=params)
-                if response.status_code != 200:
-                    gaming_cache_service.save_raw_achievements(appid, [])
-                    return []
-                data = response.json()
-                achievements = data.get("playerstats", {}).get("achievements", [])
-                gaming_cache_service.save_raw_achievements(appid, achievements)
-                return achievements
+            client = await http_client.get()
+            response = await client.get(url, params=params, timeout=30.0)
+            if response.status_code != 200:
+                gaming_cache_service.save_raw_achievements(appid, [])
+                return []
+            data = response.json()
+            achievements = data.get("playerstats", {}).get("achievements", [])
+            gaming_cache_service.save_raw_achievements(appid, achievements)
+            return achievements
         except Exception as e:
             print(f"Failed to fetch achievements for {appid}: {e}")
             return []
@@ -123,34 +147,41 @@ class GamingService:
                 return game
         return None
 
-    async def fetch_game_details(self, appid: int) -> Optional[Dict]:
+    async def fetch_game_details(
+        self, appid: int, _coalesced: bool = False
+    ) -> Optional[Dict]:
         """Fetch detailed game info from cache or Steam Store API"""
         # Check cache first
         cached = gaming_cache_service.get_cached_details(appid)
         if cached is not None:
             return cached
+        if not _coalesced:
+            return await self._requests.run(
+                f"details:{appid}",
+                lambda: self.fetch_game_details(appid, _coalesced=True),
+            )
 
         url = f"{self.STEAM_STORE_API}/appdetails"
         params = {"appids": appid, "l": "english"}
 
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(url, params=params)
-                if response.status_code != 200:
-                    return None
-                data = response.json()
-                game_data = data.get(str(appid), {})
-                if not game_data.get("success"):
-                    return None
-                details = game_data.get("data")
+            client = await http_client.get()
+            response = await client.get(url, params=params, timeout=30.0)
+            if response.status_code != 200:
+                return None
+            data = response.json()
+            game_data = data.get(str(appid), {})
+            if not game_data.get("success"):
+                return None
+            details = game_data.get("data")
 
-                # Cache details and media
-                if details:
-                    cached_details = await gaming_cache_service.cache_game_media(appid, details)
-                    gaming_cache_service.save_details(appid, cached_details)
-                    return cached_details
+            # Cache details and media
+            if details:
+                cached_details = await gaming_cache_service.cache_game_media(appid, details)
+                gaming_cache_service.save_details(appid, cached_details)
+                return cached_details
 
-                return details
+            return details
         except Exception as e:
             print(f"Failed to fetch game details for {appid}: {e}")
             return None
@@ -165,26 +196,35 @@ class GamingService:
         params = {"key": config["api_key"], "appid": appid}
 
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(url, params=params)
-                if response.status_code != 200:
-                    return []
-                data = response.json()
-                stats = data.get("game", {}).get("availableGameStats", {})
-                return stats.get("achievements", [])
+            client = await http_client.get()
+            response = await client.get(url, params=params, timeout=30.0)
+            if response.status_code != 200:
+                return []
+            data = response.json()
+            stats = data.get("game", {}).get("availableGameStats", {})
+            return stats.get("achievements", [])
         except Exception as e:
             print(f"Failed to fetch achievement schema for {appid}: {e}")
             return []
 
-    async def fetch_detailed_achievements(self, appid: int) -> List[Dict]:
+    async def fetch_detailed_achievements(
+        self, appid: int, _coalesced: bool = False
+    ) -> List[Dict]:
         """Fetch achievements with full details (status + schema merged)"""
         # Check cache first
         cached = gaming_cache_service.get_cached_achievements(appid)
         if cached is not None:
             return cached
+        if not _coalesced:
+            return await self._requests.run(
+                f"detailed-achievements:{appid}",
+                lambda: self.fetch_detailed_achievements(appid, _coalesced=True),
+            )
 
-        player_achievements = await self.fetch_game_achievements(appid)
-        schema = await self.fetch_achievement_schema(appid)
+        player_achievements, schema = await asyncio.gather(
+            self.fetch_game_achievements(appid),
+            self.fetch_achievement_schema(appid)
+        )
 
         # Create schema lookup by name
         schema_map = {ach["name"]: ach for ach in schema}
@@ -210,12 +250,19 @@ class GamingService:
         return cached_achievements
 
 
-    async def fetch_game_news(self, appid: int, count: int = 10) -> List[Dict]:
+    async def fetch_game_news(
+        self, appid: int, count: int = 10, _coalesced: bool = False
+    ) -> List[Dict]:
         """Fetch news/updates for a specific game from Steam News API"""
         # Check cache first
         cached = gaming_cache_service.get_cached_news(appid, count)
         if cached is not None:
             return cached
+        if not _coalesced:
+            return await self._requests.run(
+                f"news:{appid}:{count}",
+                lambda: self.fetch_game_news(appid, count, _coalesced=True),
+            )
 
         url = f"{self.STEAM_API_BASE}/ISteamNews/GetNewsForApp/v2/"
         params = {
@@ -226,17 +273,17 @@ class GamingService:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(url, params=params)
-                if response.status_code != 200:
-                    gaming_cache_service.save_news(appid, [])
-                    return []
-                data = response.json()
-                news = data.get("appnews", {}).get("newsitems", [])
-                # Cache news images and JSON
-                cached_news = await gaming_cache_service.cache_news_with_images(appid, news)
-                gaming_cache_service.save_news(appid, cached_news)
-                return cached_news
+            client = await http_client.get()
+            response = await client.get(url, params=params, timeout=30.0)
+            if response.status_code != 200:
+                gaming_cache_service.save_news(appid, [])
+                return []
+            data = response.json()
+            news = data.get("appnews", {}).get("newsitems", [])
+            # Cache news images and JSON
+            cached_news = await gaming_cache_service.cache_news_with_images(appid, news)
+            gaming_cache_service.save_news(appid, cached_news)
+            return cached_news
         except Exception as e:
             print(f"Failed to fetch news for {appid}: {e}")
             return []

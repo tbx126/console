@@ -1,8 +1,14 @@
 export const CURRENCY_SYMBOLS = {
-  USD: '$', EUR: '€', CNY: '¥', JPY: '¥', GBP: '£', SGD: 'S$'
+  USD: '$',
+  EUR: '€',
+  CNY: '¥',
+  JPY: '¥',
+  GBP: '£',
+  SGD: 'S$',
+  HKD: 'HK$'
 };
 
-export const CURRENCIES = ['CNY', 'USD', 'EUR', 'JPY', 'GBP', 'SGD'];
+export const CURRENCIES = ['CNY', 'USD', 'EUR', 'JPY', 'GBP', 'SGD', 'HKD'];
 
 export function getCurrencySymbol(currency) {
   return CURRENCY_SYMBOLS[currency] || currency;

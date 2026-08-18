@@ -12,14 +12,18 @@ import FlightToolbar from '../components/travel/FlightToolbar';
 import FlightMap from '../components/travel/FlightMap';
 import { useAIDataRefresh } from '../hooks/useAIDataRefresh';
 
+const tabs = [
+  { id: 'flights', label: 'Flights' },
+  { id: 'stats', label: 'Statistics' },
+  { id: 'map', label: 'Map' }
+];
+
 const TravelPage = () => {
   const [activeTab, setActiveTab] = useState('flights');
   const [showFlightModal, setShowFlightModal] = useState(false);
   const [editingFlight, setEditingFlight] = useState(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  // Filter and search states
   const [filters, setFilters] = useState({
     dateRange: 'thisYear',
     airlines: []
@@ -32,7 +36,7 @@ const TravelPage = () => {
   const handleFlightSuccess = () => {
     setShowFlightModal(false);
     setEditingFlight(null);
-    setRefreshKey(prev => prev + 1);
+    setRefreshKey((previous) => previous + 1);
   };
 
   const handleEditFlight = (flight) => {
@@ -45,21 +49,14 @@ const TravelPage = () => {
     setEditingFlight(null);
   };
 
-  // 监听AI数据更新事件
   const handleDataUpdate = useCallback(() => {
-    setRefreshKey(prev => prev + 1);
+    setRefreshKey((previous) => previous + 1);
   }, []);
-  useAIDataRefresh(handleDataUpdate);
 
-  const tabs = [
-    { id: 'flights', label: 'Flights' },
-    { id: 'stats', label: 'Statistics' },
-    { id: 'map', label: 'Map' }
-  ];
+  useAIDataRefresh(handleDataUpdate);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
-      {/* Page Header */}
       <div className="bg-white dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-start justify-between">
@@ -75,16 +72,14 @@ const TravelPage = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="container mx-auto px-6 py-6">
         <TravelStats refresh={refreshKey} />
       </div>
 
-      {/* Tabs Navigation */}
       <div className="bg-white dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700">
         <div className="container mx-auto px-6">
           <nav className="flex space-x-8">
-            {tabs.map(tab => (
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -101,10 +96,8 @@ const TravelPage = () => {
         </div>
       </div>
 
-      {/* Main Content Area */}
       <div className="container mx-auto px-6 py-6">
         <div className="flex gap-6">
-          {/* Sidebar Filters - Desktop */}
           {activeTab === 'flights' && (
             <div className="hidden md:block">
               <FlightFilters
@@ -115,12 +108,9 @@ const TravelPage = () => {
             </div>
           )}
 
-          {/* Content Area */}
           <div className="flex-1 space-y-6">
-            {/* Toolbar for Flights Tab */}
             {activeTab === 'flights' && (
               <>
-                {/* Mobile Filter Button */}
                 <div className="md:hidden">
                   <Button
                     variant="outline"
@@ -143,7 +133,6 @@ const TravelPage = () => {
               </>
             )}
 
-            {/* Tab Content */}
             {activeTab === 'flights' && (
               <Card className="shadow-sm">
                 <FlightList
@@ -176,12 +165,24 @@ const TravelPage = () => {
       <Modal
         isOpen={showFlightModal}
         onClose={handleCloseModal}
-        title={editingFlight ? "Edit Flight" : "Add New Flight"}
+        title={editingFlight ? 'Edit Flight' : 'Add New Flight'}
       >
         <FlightForm
           flight={editingFlight}
           onSuccess={handleFlightSuccess}
           onCancel={handleCloseModal}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={showMobileFilters}
+        onClose={() => setShowMobileFilters(false)}
+        title="Flight Filters"
+      >
+        <FlightFilters
+          filters={filters}
+          onFilterChange={setFilters}
+          availableAirlines={availableAirlines}
         />
       </Modal>
     </div>

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 from datetime import datetime
-from app.models.portfolio import Investment, Project, Experience, PortfolioStatistics
+import asyncio
+from app.models.portfolio import Investment, Experience, PortfolioStatistics
 from app.services.portfolio_service import portfolio_service
 from app.services.price_service import price_service
 
@@ -48,19 +49,6 @@ async def delete_investment(investment_id: str):
     return {"message": "Investment deleted successfully"}
 
 
-# Project endpoints
-@router.get("/projects", response_model=List[Project])
-async def get_projects():
-    """Get all projects"""
-    return portfolio_service.get_projects()
-
-
-@router.post("/projects", response_model=Project)
-async def create_project(project: Project):
-    """Create new project"""
-    return portfolio_service.create_project(project)
-
-
 # Experience endpoints
 @router.get("/experience", response_model=List[Experience])
 async def get_experiences():
@@ -74,11 +62,29 @@ async def create_experience(experience: Experience):
     return portfolio_service.create_experience(experience)
 
 
+@router.put("/experience/{experience_id}", response_model=Experience)
+async def update_experience(experience_id: str, experience: Experience):
+    """Update experience"""
+    updated = portfolio_service.update_experience(experience_id, experience)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Experience not found")
+    return updated
+
+
+@router.delete("/experience/{experience_id}")
+async def delete_experience(experience_id: str):
+    """Delete experience"""
+    success = portfolio_service.delete_experience(experience_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Experience not found")
+    return {"message": "Experience deleted successfully"}
+
+
 # Statistics endpoint
 @router.get("/statistics", response_model=PortfolioStatistics)
 async def get_statistics():
     """Get portfolio statistics"""
-    return portfolio_service.get_statistics()
+    return await portfolio_service.get_statistics()
 
 
 # Price endpoints
@@ -89,6 +95,49 @@ async def get_price(symbol: str, asset_type: str = "stock"):
     if not price_data:
         raise HTTPException(status_code=404, detail="Price not found")
     return price_data
+
+
+@router.post("/investments/refresh-all-prices")
+async def refresh_all_prices():
+    """Refresh prices for all investments with symbols"""
+    investments = portfolio_service.get_investments()
+
+    # Filter investments that need price updates
+    investments_to_update = [
+        inv for inv in investments
+        if inv.symbol and inv.type in ("stock", "crypto")
+    ]
+
+    if not investments_to_update:
+        return {"updated": [], "failed": []}
+
+    # Fetch all prices in parallel
+    tasks = [
+        price_service.get_price(inv.symbol, inv.type)
+        for inv in investments_to_update
+    ]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    updated = []
+    failed = []
+    price_updates = {}
+    updated_at = datetime.now().isoformat()
+
+    # Process results
+    for inv, result in zip(investments_to_update, results):
+        if isinstance(result, Exception) or not result:
+            failed.append(inv.name)
+        else:
+            price_updates[inv.id] = {
+                "current_price": result["price"],
+                "currency": result.get("currency", "USD"),
+                "last_price_update": updated_at,
+            }
+            updated.append(inv.name)
+
+    portfolio_service.update_investment_prices(price_updates)
+
+    return {"updated": updated, "failed": failed}
 
 
 @router.post("/investments/{investment_id}/refresh-price")
@@ -106,6 +155,7 @@ async def refresh_investment_price(investment_id: str):
         raise HTTPException(status_code=404, detail="Could not fetch price")
 
     investment.current_price = price_data["price"]
+    investment.currency = price_data.get("currency", "USD")
     investment.last_price_update = datetime.now().isoformat()
     updated = portfolio_service.update_investment(investment_id, investment)
 

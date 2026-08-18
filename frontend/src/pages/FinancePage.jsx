@@ -11,8 +11,24 @@ import FinanceStats from '../components/finance/FinanceStats';
 import ExpenseFilters from '../components/finance/ExpenseFilters';
 import ExpenseToolbar from '../components/finance/ExpenseToolbar';
 import financeApi from '../services/financeApi';
-import { CURRENCIES, CURRENCY_SYMBOLS, convertAmount as convertCurrency } from '../lib/currency';
+import { CURRENCIES, getCurrencySymbol } from '../lib/currency';
 import { useAIDataRefresh } from '../hooks/useAIDataRefresh';
+
+const expenseCategories = [
+  { id: 'food', name: 'Food & Dining' },
+  { id: 'transport', name: 'Transportation' },
+  { id: 'shopping', name: 'Shopping' },
+  { id: 'entertainment', name: 'Entertainment' },
+  { id: 'bills', name: 'Bills & Utilities' },
+  { id: 'health', name: 'Health & Fitness' },
+  { id: 'other', name: 'Other' }
+];
+
+const tabs = [
+  { id: 'expenses', label: 'Expenses' },
+  { id: 'budget', label: 'Budget' },
+  { id: 'charts', label: 'Charts' }
+];
 
 const FinancePage = () => {
   const [activeTab, setActiveTab] = useState('expenses');
@@ -20,28 +36,25 @@ const FinancePage = () => {
   const [editingExpense, setEditingExpense] = useState(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [displayCurrency, setDisplayCurrency] = useState(() =>
-    localStorage.getItem('displayCurrency') || 'CNY'
-  );
+  const [displayCurrency, setDisplayCurrency] = useState(() => localStorage.getItem('displayCurrency') || 'CNY');
   const [exchangeRates, setExchangeRates] = useState(null);
   const [refreshingRates, setRefreshingRates] = useState(false);
-  const currencySymbol = CURRENCY_SYMBOLS[displayCurrency] || displayCurrency;
-
-  // Filter and search states
   const [filters, setFilters] = useState({
     dateRange: 'thisMonth',
     categories: [],
     minAmount: 0,
-    maxAmount: 10000
+    maxAmount: null
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('date-desc');
   const [viewMode, setViewMode] = useState('list');
 
+  const currencySymbol = getCurrencySymbol(displayCurrency);
+
   const handleExpenseSuccess = () => {
     setShowExpenseModal(false);
     setEditingExpense(null);
-    setRefreshKey(prev => prev + 1);
+    setRefreshKey((previous) => previous + 1);
   };
 
   const handleEditExpense = (expense) => {
@@ -54,56 +67,53 @@ const FinancePage = () => {
     setEditingExpense(null);
   };
 
-  // 监听AI数据更新事件
   const handleDataUpdate = useCallback(() => {
-    setRefreshKey(prev => prev + 1);
+    setRefreshKey((previous) => previous + 1);
   }, []);
+
   useAIDataRefresh(handleDataUpdate);
 
-  // 获取汇率
   useEffect(() => {
+    let cancelled = false;
+
     const fetchRates = async () => {
       try {
         const ratesData = await financeApi.getExchangeRates('USD');
-        setExchangeRates(ratesData.rates);
-      } catch (e) {
-        console.error('Failed to fetch exchange rates:', e);
+        if (!cancelled) {
+          setExchangeRates(ratesData.rates);
+        }
+      } catch (error) {
+        console.error('Failed to fetch exchange rates:', error);
       }
     };
-    fetchRates();
+
+    void fetchRates();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // 刷新汇率
   const refreshRates = async () => {
     setRefreshingRates(true);
+
     try {
       const ratesData = await financeApi.getExchangeRates('USD');
       setExchangeRates(ratesData.rates);
-    } catch (e) {
-      console.error('Failed to refresh rates:', e);
+    } catch (error) {
+      console.error('Failed to refresh rates:', error);
     } finally {
       setRefreshingRates(false);
     }
   };
 
-  // 切换货币
   const handleCurrencyChange = (currency) => {
     setDisplayCurrency(currency);
     localStorage.setItem('displayCurrency', currency);
   };
 
-  const convertAmount = (amount, fromCurrency = 'USD') =>
-    convertCurrency(amount, fromCurrency, displayCurrency, exchangeRates);
-
-  const tabs = [
-    { id: 'expenses', label: 'Expenses' },
-    { id: 'budget', label: 'Budget' },
-    { id: 'charts', label: 'Charts' }
-  ];
-
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
-      {/* Page Header */}
       <div className="bg-white dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-start justify-between">
@@ -115,11 +125,11 @@ const FinancePage = () => {
               <div className="flex items-center gap-2">
                 <select
                   value={displayCurrency}
-                  onChange={(e) => handleCurrencyChange(e.target.value)}
+                  onChange={(event) => handleCurrencyChange(event.target.value)}
                   className="px-3 py-2 border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                 >
-                  {CURRENCIES.map(c => (
-                    <option key={c} value={c}>{c}</option>
+                  {CURRENCIES.map((currency) => (
+                    <option key={currency} value={currency}>{currency}</option>
                   ))}
                 </select>
                 <Button
@@ -141,7 +151,6 @@ const FinancePage = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="container mx-auto px-6 py-6">
         <FinanceStats
           refresh={refreshKey}
@@ -151,11 +160,10 @@ const FinancePage = () => {
         />
       </div>
 
-      {/* Tabs Navigation */}
       <div className="bg-white dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700">
         <div className="container mx-auto px-6">
           <nav className="flex space-x-8">
-            {tabs.map(tab => (
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -172,35 +180,22 @@ const FinancePage = () => {
         </div>
       </div>
 
-      {/* Main Content Area */}
       <div className="container mx-auto px-6 py-6">
         <div className="flex gap-6">
-          {/* Sidebar Filters - Desktop */}
           {activeTab === 'expenses' && (
             <div className="hidden md:block">
               <ExpenseFilters
                 filters={filters}
                 onFilterChange={setFilters}
                 currencySymbol={currencySymbol}
-                categories={[
-                  { id: 'food', name: 'Food & Dining' },
-                  { id: 'transport', name: 'Transportation' },
-                  { id: 'shopping', name: 'Shopping' },
-                  { id: 'entertainment', name: 'Entertainment' },
-                  { id: 'bills', name: 'Bills & Utilities' },
-                  { id: 'health', name: 'Health & Fitness' },
-                  { id: 'other', name: 'Other' }
-                ]}
+                categories={expenseCategories}
               />
             </div>
           )}
 
-          {/* Content Area */}
           <div className="flex-1 space-y-6">
-            {/* Toolbar for Expenses Tab */}
             {activeTab === 'expenses' && (
               <>
-                {/* Mobile Filter Button */}
                 <div className="md:hidden">
                   <Button
                     variant="outline"
@@ -223,7 +218,6 @@ const FinancePage = () => {
               </>
             )}
 
-            {/* Tab Content */}
             {activeTab === 'expenses' && (
               <Card className="shadow-sm">
                 <ExpenseList
@@ -242,13 +236,13 @@ const FinancePage = () => {
 
             {activeTab === 'budget' && (
               <Card className="shadow-sm">
-                <BudgetOverview />
+                <BudgetOverview refresh={refreshKey} currencySymbol={currencySymbol} />
               </Card>
             )}
 
             {activeTab === 'charts' && (
               <Card className="shadow-sm">
-                <SpendingChart />
+                <SpendingChart refresh={refreshKey} currencySymbol={currencySymbol} />
               </Card>
             )}
           </div>
@@ -258,12 +252,25 @@ const FinancePage = () => {
       <Modal
         isOpen={showExpenseModal}
         onClose={handleCloseModal}
-        title={editingExpense ? "Edit Expense" : "Add New Expense"}
+        title={editingExpense ? 'Edit Expense' : 'Add New Expense'}
       >
         <ExpenseForm
           expense={editingExpense}
           onSuccess={handleExpenseSuccess}
           onCancel={handleCloseModal}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={showMobileFilters}
+        onClose={() => setShowMobileFilters(false)}
+        title="Expense Filters"
+      >
+        <ExpenseFilters
+          filters={filters}
+          onFilterChange={setFilters}
+          currencySymbol={currencySymbol}
+          categories={expenseCategories}
         />
       </Modal>
     </div>

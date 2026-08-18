@@ -43,39 +43,12 @@ async def get_api_keys():
 @router.put("/api-keys")
 async def update_api_keys(config: APIKeysConfig):
     """Update API keys"""
-    data = data_manager.read_data(settings.config_data_file)
+    updates = {key: value for key, value in config.model_dump().items() if value}
 
-    if "api_keys" not in data:
-        data["api_keys"] = {}
+    def mutate(data):
+        data.setdefault("api_keys", {}).update(updates)
 
-    # Only update non-empty values
-    if config.alpha_vantage_key:
-        data["api_keys"]["alpha_vantage_key"] = config.alpha_vantage_key
-    if config.coingecko_key:
-        data["api_keys"]["coingecko_key"] = config.coingecko_key
-    if config.exchange_rate_key:
-        data["api_keys"]["exchange_rate_key"] = config.exchange_rate_key
-    # Flight APIs
-    if config.aerodatabox_key:
-        data["api_keys"]["aerodatabox_key"] = config.aerodatabox_key
-    if config.airlabs_key:
-        data["api_keys"]["airlabs_key"] = config.airlabs_key
-    if config.aviationstack_key:
-        data["api_keys"]["aviationstack_key"] = config.aviationstack_key
-    if config.opensky_username:
-        data["api_keys"]["opensky_username"] = config.opensky_username
-    if config.opensky_password:
-        data["api_keys"]["opensky_password"] = config.opensky_password
-    # Maps
-    if config.google_maps_key:
-        data["api_keys"]["google_maps_key"] = config.google_maps_key
-    # Steam
-    if config.steam_api_key:
-        data["api_keys"]["steam_api_key"] = config.steam_api_key
-    if config.steam_id:
-        data["api_keys"]["steam_id"] = config.steam_id
-
-    data_manager.write_data(settings.config_data_file, data)
+    data_manager.update_data(settings.config_data_file, mutate)
 
     return {"message": "API keys updated successfully"}
 
@@ -83,11 +56,10 @@ async def update_api_keys(config: APIKeysConfig):
 @router.delete("/api-keys/{key_name}")
 async def delete_api_key(key_name: str):
     """Delete a specific API key"""
-    data = data_manager.read_data(settings.config_data_file)
+    def mutate(data):
+        return data.get("api_keys", {}).pop(key_name, None) is not None
 
-    if "api_keys" in data and key_name in data["api_keys"]:
-        del data["api_keys"][key_name]
-        data_manager.write_data(settings.config_data_file, data)
+    data_manager.update_data(settings.config_data_file, mutate, write_if=bool)
 
     return {"message": f"API key '{key_name}' deleted"}
 

@@ -17,18 +17,6 @@ export default function GameCardV2({ game, onClick, index = 0, viewMode = 'mason
     return `${Math.floor(hours / 10) * 10}h+`;
   };
 
-  const formatLastPlayed = (timestamp) => {
-    if (!timestamp) return null;
-    const date = new Date(timestamp * 1000);
-    const now = new Date();
-    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays}d ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-    return `${Math.floor(diffDays / 30)}mo ago`;
-  };
-
   const formatLastPlayedDate = (timestamp) => {
     if (!timestamp) return null;
     const date = new Date(timestamp * 1000);
@@ -41,10 +29,7 @@ export default function GameCardV2({ game, onClick, index = 0, viewMode = 'mason
   // Steam images
   const headerUrl = `https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
   const capsuleUrl = `https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/library_600x900.jpg`;
-  const heroUrl = `https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/library_hero.jpg`;
-
   const size = viewMode === 'masonry' ? getCardSize(index) : 'uniform';
-  const lastPlayed = formatLastPlayed(game.rtime_last_played);
 
   // Compact view - Steam store list style
   if (viewMode === 'compact') {

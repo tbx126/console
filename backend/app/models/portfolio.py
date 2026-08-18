@@ -12,23 +12,10 @@ class Investment(BaseModel):
     quantity: float = Field(..., gt=0)
     purchase_price: float = Field(..., gt=0)
     current_price: Optional[float] = None
+    currency: str = "USD"  # USD, SGD, CNY, etc.
     last_price_update: Optional[str] = None  # ISO format datetime
     purchase_date: str  # ISO format date string
-    notes: Optional[str] = None
-    created_at: Optional[str] = None
-
-
-class Project(BaseModel):
-    """Project model"""
-    id: Optional[str] = None
-    name: str
-    description: str
-    status: str = "active"  # active, completed, on-hold
-    technologies: List[str] = []
-    start_date: str  # ISO format date string
-    end_date: Optional[str] = None
-    url: Optional[str] = None
-    achievements: List[str] = []
+    status: str = "active"  # active, sold, pending
     notes: Optional[str] = None
     created_at: Optional[str] = None
 
@@ -53,6 +40,3 @@ class PortfolioStatistics(BaseModel):
     total_investment_value: float = 0
     total_gain_loss: float = 0
     total_gain_loss_percentage: float = 0
-    total_projects: int = 0
-    active_projects: int = 0
-    completed_projects: int = 0

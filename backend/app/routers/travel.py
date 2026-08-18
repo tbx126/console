@@ -4,10 +4,9 @@ from app.models.travel import Flight, AirlineStats, Achievement, TravelStatistic
 from app.services.travel_service import travel_service
 from app.services.flight_lookup_service import flight_lookup_service
 from app.services.airport_data_service import airport_data_service
-from app.services.data_manager import DataManager
+from app.services.data_manager import data_manager
 
 router = APIRouter()
-data_manager = DataManager()
 
 
 # Flight endpoints

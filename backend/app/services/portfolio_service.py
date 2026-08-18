@@ -1,9 +1,10 @@
-from typing import List, Optional
-from datetime import datetime
-from app.models.portfolio import Investment, Project, Experience, PortfolioStatistics
+import asyncio
+from typing import Dict, List, Optional
+from app.models.portfolio import Investment, Experience, PortfolioStatistics
 from app.services.data_manager import data_manager
+from app.services.exchange_rate_service import exchange_rate_service
 from app.config import settings
-import uuid
+from app.utils.crud_helpers import get_all_items, get_item_by_id, create_item, update_item_by_id, delete_item_by_id
 
 
 class PortfolioService:
@@ -15,111 +16,87 @@ class PortfolioService:
     # Investment operations
     def get_investments(self) -> List[Investment]:
         """Get all investments"""
-        data = data_manager.read_data(self.data_file)
-        return [Investment(**inv) for inv in data.get("investments", [])]
+        return get_all_items(data_manager, self.data_file, "investments", Investment)
 
     def get_investment(self, investment_id: str) -> Optional[Investment]:
         """Get investment by ID"""
-        investments = self.get_investments()
-        for investment in investments:
-            if investment.id == investment_id:
-                return investment
-        return None
+        return get_item_by_id(data_manager, self.data_file, "investments", investment_id, Investment)
 
     def create_investment(self, investment: Investment) -> Investment:
         """Create new investment"""
-        data = data_manager.read_data(self.data_file)
-        investment.id = str(uuid.uuid4())
-        investment.created_at = datetime.now().isoformat()
-
-        if "investments" not in data:
-            data["investments"] = []
-
-        data["investments"].append(investment.model_dump())
-        data_manager.write_data(self.data_file, data)
-        return investment
+        return create_item(data_manager, self.data_file, "investments", investment)
 
     def update_investment(self, investment_id: str, investment: Investment) -> Optional[Investment]:
         """Update investment"""
-        data = data_manager.read_data(self.data_file)
-        investments = data.get("investments", [])
-
-        for i, inv in enumerate(investments):
-            if inv["id"] == investment_id:
-                investment.id = investment_id
-                investment.created_at = inv.get("created_at", datetime.now().isoformat())
-                investments[i] = investment.model_dump()
-                data_manager.write_data(self.data_file, data)
-                return investment
-
-        return None
+        return update_item_by_id(data_manager, self.data_file, "investments", investment_id, investment, Investment)
 
     def delete_investment(self, investment_id: str) -> bool:
         """Delete investment"""
-        data = data_manager.read_data(self.data_file)
-        investments = data.get("investments", [])
+        return delete_item_by_id(data_manager, self.data_file, "investments", investment_id)
 
-        for i, inv in enumerate(investments):
-            if inv["id"] == investment_id:
-                investments.pop(i)
-                data_manager.write_data(self.data_file, data)
-                return True
+    def update_investment_prices(self, updates: Dict[str, Dict]) -> int:
+        """Persist a batch of fetched prices with one atomic write and backup."""
+        if not updates:
+            return 0
 
-        return False
+        def mutate(data: Dict) -> int:
+            updated_count = 0
+            for investment in data.get("investments", []):
+                values = updates.get(investment.get("id"))
+                if values is None:
+                    continue
+                investment.update(values)
+                updated_count += 1
+            return updated_count
 
-    # Project operations
-    def get_projects(self) -> List[Project]:
-        """Get all projects"""
-        data = data_manager.read_data(self.data_file)
-        return [Project(**proj) for proj in data.get("projects", [])]
-
-    def create_project(self, project: Project) -> Project:
-        """Create new project"""
-        data = data_manager.read_data(self.data_file)
-        project.id = str(uuid.uuid4())
-        project.created_at = datetime.now().isoformat()
-
-        if "projects" not in data:
-            data["projects"] = []
-
-        data["projects"].append(project.model_dump())
-        data_manager.write_data(self.data_file, data)
-        return project
+        return data_manager.update_data(
+            self.data_file,
+            mutate,
+            write_if=lambda count: count > 0,
+        )
 
     # Experience operations
     def get_experiences(self) -> List[Experience]:
         """Get all professional experiences"""
-        data = data_manager.read_data(self.data_file)
-        return [Experience(**exp) for exp in data.get("professional_experience", [])]
+        return get_all_items(data_manager, self.data_file, "professional_experience", Experience)
 
     def create_experience(self, experience: Experience) -> Experience:
         """Create new experience"""
-        data = data_manager.read_data(self.data_file)
-        experience.id = str(uuid.uuid4())
-        experience.created_at = datetime.now().isoformat()
+        return create_item(data_manager, self.data_file, "professional_experience", experience)
 
-        if "professional_experience" not in data:
-            data["professional_experience"] = []
+    def update_experience(self, experience_id: str, experience: Experience) -> Optional[Experience]:
+        """Update experience"""
+        return update_item_by_id(data_manager, self.data_file, "professional_experience", experience_id, experience, Experience)
 
-        data["professional_experience"].append(experience.model_dump())
-        data_manager.write_data(self.data_file, data)
-        return experience
+    def delete_experience(self, experience_id: str) -> bool:
+        """Delete experience"""
+        return delete_item_by_id(data_manager, self.data_file, "professional_experience", experience_id)
 
     # Statistics
-    def get_statistics(self) -> PortfolioStatistics:
-        """Calculate portfolio statistics"""
+    async def get_statistics(self) -> PortfolioStatistics:
+        """Calculate portfolio statistics (all values in CNY)"""
         investments = self.get_investments()
-        projects = self.get_projects()
+
+        # Batch fetch currency rates
+        unique_currencies = set(getattr(inv, 'currency', 'USD') for inv in investments)
+        currencies = sorted(unique_currencies)
+        rate_values = await asyncio.gather(
+            *(exchange_rate_service.get_rate_to_cny(currency) for currency in currencies)
+        )
+        rates = dict(zip(currencies, rate_values))
 
         total_investment_value = 0
         total_cost = 0
 
         for inv in investments:
-            cost = inv.purchase_price * inv.quantity
+            currency = getattr(inv, 'currency', 'USD')
+            rate = rates[currency]
+
+            cost = inv.purchase_price * inv.quantity * rate
             total_cost += cost
 
             if inv.current_price:
-                current_value = inv.current_price * inv.quantity
+                current_value = inv.current_price * inv.quantity * rate
                 total_investment_value += current_value
             else:
                 total_investment_value += cost
@@ -127,17 +104,11 @@ class PortfolioService:
         total_gain_loss = total_investment_value - total_cost
         total_gain_loss_percentage = (total_gain_loss / total_cost * 100) if total_cost > 0 else 0
 
-        active_projects = sum(1 for p in projects if p.status == "active")
-        completed_projects = sum(1 for p in projects if p.status == "completed")
-
         return PortfolioStatistics(
             total_investments=len(investments),
             total_investment_value=total_investment_value,
             total_gain_loss=total_gain_loss,
-            total_gain_loss_percentage=total_gain_loss_percentage,
-            total_projects=len(projects),
-            active_projects=active_projects,
-            completed_projects=completed_projects
+            total_gain_loss_percentage=total_gain_loss_percentage
         )
 
 

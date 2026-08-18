@@ -1,17 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import financeApi from '../../services/financeApi';
 
-const SpendingChart = () => {
+const SpendingChart = ({ refresh, currencySymbol = '¥' }) => {
   const [statistics, setStatistics] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [stats, cats] = await Promise.all([
         financeApi.getStatistics(),
@@ -24,7 +20,11 @@ const SpendingChart = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData, refresh]);
 
   if (loading) {
     return <div className="text-center py-8 text-gray-500">Loading chart...</div>;
@@ -67,7 +67,7 @@ const SpendingChart = () => {
               <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
           </Pie>
-          <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+          <Tooltip formatter={(value) => `${currencySymbol}${value.toFixed(2)}`} />
           <Legend />
         </PieChart>
       </ResponsiveContainer>
@@ -83,7 +83,7 @@ const SpendingChart = () => {
               <span className="text-sm font-medium text-gray-700">{item.name}</span>
             </div>
             <div className="text-lg font-bold text-gray-900">
-              ${item.value.toFixed(2)}
+              {currencySymbol}{item.value.toFixed(2)}
             </div>
           </div>
         ))}

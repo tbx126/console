@@ -62,6 +62,24 @@ async def create_income(income: Income):
     return finance_service.create_income(income)
 
 
+@router.put("/income/{income_id}", response_model=Income)
+async def update_income(income_id: str, income: Income):
+    """Update income"""
+    updated = finance_service.update_income(income_id, income)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Income not found")
+    return updated
+
+
+@router.delete("/income/{income_id}")
+async def delete_income(income_id: str):
+    """Delete income"""
+    success = finance_service.delete_income(income_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Income not found")
+    return {"message": "Income deleted successfully"}
+
+
 # Bill endpoints
 @router.get("/bills", response_model=List[Bill])
 async def get_bills():
@@ -73,6 +91,24 @@ async def get_bills():
 async def create_bill(bill: Bill):
     """Create new bill"""
     return finance_service.create_bill(bill)
+
+
+@router.put("/bills/{bill_id}", response_model=Bill)
+async def update_bill(bill_id: str, bill: Bill):
+    """Update bill"""
+    updated = finance_service.update_bill(bill_id, bill)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    return updated
+
+
+@router.delete("/bills/{bill_id}")
+async def delete_bill(bill_id: str):
+    """Delete bill"""
+    success = finance_service.delete_bill(bill_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    return {"message": "Bill deleted successfully"}
 
 
 # Budget endpoints
@@ -88,6 +124,24 @@ async def create_budget(budget: Budget):
     return finance_service.create_budget(budget)
 
 
+@router.put("/budgets/{budget_id}", response_model=Budget)
+async def update_budget(budget_id: str, budget: Budget):
+    """Update budget"""
+    updated = finance_service.update_budget(budget_id, budget)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Budget not found")
+    return updated
+
+
+@router.delete("/budgets/{budget_id}")
+async def delete_budget(budget_id: str):
+    """Delete budget"""
+    success = finance_service.delete_budget(budget_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Budget not found")
+    return {"message": "Budget deleted successfully"}
+
+
 # Category endpoints
 @router.get("/categories", response_model=List[Category])
 async def get_categories():
@@ -99,7 +153,7 @@ async def get_categories():
 @router.get("/statistics", response_model=FinanceStatistics)
 async def get_statistics():
     """Get finance statistics"""
-    return finance_service.get_statistics()
+    return await finance_service.get_statistics()
 
 
 # Exchange rate endpoints
@@ -117,7 +171,9 @@ async def get_exchange_rates(base: str = "USD"):
 @router.get("/convert")
 async def convert_currency(amount: float, from_currency: str, to_currency: str):
     """Convert amount between currencies"""
-    converted = await exchange_rate_service.convert(amount, from_currency, to_currency)
+    from_rate = await exchange_rate_service.get_rate_to_cny(from_currency)
+    to_rate = await exchange_rate_service.get_rate_to_cny(to_currency)
+    converted = amount * (from_rate / to_rate) if to_rate else amount
     return {
         "amount": amount,
         "from": from_currency,
