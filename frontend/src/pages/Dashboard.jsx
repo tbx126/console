@@ -29,7 +29,7 @@ function Sparkline({ points }) {
   const line = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   const rising = vs[vs.length - 1] >= vs[0];
   return (
-    <svg viewBox="0 0 200 48" preserveAspectRatio="none" className="h-12 min-w-[120px] flex-1" role="img" aria-label={`近 90 天资产走势，整体${rising ? '上升' : '下降'}`}>
+    <svg viewBox="0 0 200 48" preserveAspectRatio="none" className="h-16 min-w-[160px] flex-1" role="img" aria-label={`近 90 天资产走势，整体${rising ? '上升' : '下降'}`}>
       <path d={`M0,48 L${line.replaceAll(' ', ' L')} L200,48 Z`} fill="var(--chart-area)" />
       <polyline points={line} fill="none" stroke="var(--cat-stock)" strokeWidth="2" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
     </svg>
@@ -44,7 +44,7 @@ function ProgressBar({ value, className, label }) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(value * 100)}
-      className={`block h-1.5 overflow-hidden rounded-full bg-muted ${className ?? ''}`}
+      className={`block h-2 overflow-hidden rounded-full bg-muted ${className ?? ''}`}
     >
       <i className="block h-full rounded-full bg-primary" style={{ width: `${Math.min(100, value * 100)}%` }} />
     </span>
@@ -104,18 +104,18 @@ export default function Dashboard() {
         }
       />
 
-      <section className="flex flex-wrap overflow-hidden rounded-[10px] border border-border bg-card">
-        <Link to="/portfolio/insights" className="flex flex-[1_1_380px] flex-wrap items-end gap-4 px-4 py-3.5 text-foreground hover:bg-muted/50">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs text-muted-foreground">总资产 · {currency}</span>
+      <section className="flex flex-wrap overflow-hidden rounded-2xl border border-border bg-card">
+        <Link to="/portfolio/insights" className="flex flex-[1_1_380px] flex-wrap items-end gap-6 px-6 py-5 text-foreground hover:bg-muted/50">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-muted-foreground">总资产 · {currency}</span>
             {loadingSummary ? (
-              <Skeleton className="h-9 w-48" />
+              <Skeleton className="h-11 w-56" />
             ) : (
-              <strong className="tabular text-[28px] font-semibold leading-tight tracking-tight">
+              <strong className="tabular text-[38px] font-semibold leading-tight tracking-tight">
                 {summaryQuery.error ? '暂不可用' : summary?.empty ? '尚无持仓' : money(total, currency, 0)}
               </strong>
             )}
-            <span className="text-xs text-muted-foreground">
+            <span className="text-sm text-muted-foreground">
               {summary?.change30 != null && (
                 <strong className="tabular font-semibold text-foreground">
                   {summary.change30 >= 0 ? '+' : '−'}
@@ -128,19 +128,19 @@ export default function Dashboard() {
           </div>
           <Sparkline points={summary?.trend ?? []} />
         </Link>
-        <a href="#milestones" className="flex flex-[1_1_300px] flex-col justify-center gap-1.5 border-l border-border bg-accent px-4 py-3.5 text-foreground">
+        <a href="#milestones" className="flex flex-[1_1_300px] flex-col justify-center gap-2.5 border-l border-border bg-accent px-6 py-5 text-foreground">
           {next ? (
             <>
               <div className="flex items-baseline justify-between gap-2">
                 <span>
-                  <span className="text-xs text-accent-foreground">下一个里程碑</span>
+                  <span className="text-sm text-accent-foreground">下一个里程碑</span>
                   <br />
-                  <strong className="text-[15px] font-semibold">{next.title}</strong>
+                  <strong className="text-lg font-semibold">{next.title}</strong>
                 </span>
-                <strong className="tabular text-xl font-semibold text-accent-foreground">{pct(next.progress)}</strong>
+                <strong className="tabular text-2xl font-semibold text-accent-foreground">{pct(next.progress)}</strong>
               </div>
               <ProgressBar value={next.progress} label={`距离${next.title}`} className="bg-card" />
-              <span className="text-xs text-muted-foreground">
+              <span className="text-sm text-muted-foreground">
                 {next.detail}
                 {next.eta ? ` · 按近 90 天增速约 ${next.eta} 达成` : ''}
               </span>
@@ -164,7 +164,7 @@ export default function Dashboard() {
         ]}
       />
 
-      <div className="flex flex-wrap items-start gap-3">
+      <div className="flex flex-wrap items-start gap-4">
         <Section
           id="milestones"
           className="flex-[999_1_520px] scroll-mt-16"
@@ -177,16 +177,16 @@ export default function Dashboard() {
           ) : milestonesQuery.error ? (
             <p className="py-6 text-center text-muted-foreground">里程碑暂不可用。</p>
           ) : (
-            <div className="grid gap-x-7" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+            <div className="grid gap-x-8 gap-y-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
               <div>
-                <div className="py-1 text-xs text-muted-foreground">进行中</div>
+                <div className="pb-1.5 text-[13px] font-medium text-muted-foreground">进行中</div>
                 {upcoming.slice(0, 5).map((m) => (
-                  <div key={m.id} className="grid grid-cols-[28px_minmax(0,1fr)_auto] items-start gap-2.5 border-t border-border py-2">
+                  <div key={m.id} className="grid grid-cols-[32px_minmax(0,1fr)_auto] items-start gap-3 border-t border-border py-2.5">
                     <span className="mx-auto mt-1 size-3 rounded-full border-2 border-dashed border-muted-foreground" aria-hidden="true" />
                     <span className="flex min-w-0 flex-col gap-1">
                       <span>
                         <strong className="font-semibold">{m.title}</strong>
-                        <span className="ml-1.5 rounded bg-muted px-1.5 py-px text-[11px] text-muted-foreground">{MODULES[m.module]}</span>
+                        <span className="ml-1.5 rounded bg-muted px-1.5 py-px text-xs text-muted-foreground">{MODULES[m.module]}</span>
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {m.detail}
@@ -200,13 +200,13 @@ export default function Dashboard() {
                 {!upcoming.length && <p className="border-t border-border py-4 text-xs text-muted-foreground">暂无进行中的里程碑。</p>}
               </div>
               <div>
-                <div className="py-1 text-xs text-muted-foreground">已达成</div>
+                <div className="pb-1.5 text-[13px] font-medium text-muted-foreground">已达成</div>
                 {achieved.slice(0, 6).map((m) => (
-                  <div key={m.id} className="grid grid-cols-[28px_minmax(0,1fr)_auto] items-start gap-2.5 border-t border-border py-2">
+                  <div key={m.id} className="grid grid-cols-[32px_minmax(0,1fr)_auto] items-start gap-3 border-t border-border py-2.5">
                     <EmojiPicker milestone={m} />
                     <span className="min-w-0">
                       <strong className="font-semibold">{m.title}</strong>
-                      <span className="ml-1.5 rounded bg-muted px-1.5 py-px text-[11px] text-muted-foreground">{MODULES[m.module]}</span>
+                      <span className="ml-1.5 rounded bg-muted px-1.5 py-px text-xs text-muted-foreground">{MODULES[m.module]}</span>
                       <span className="block truncate text-xs text-muted-foreground">{m.detail}</span>
                     </span>
                     <span className="tabular text-right text-xs text-muted-foreground">{m.date ?? '已达成'}</span>
@@ -218,28 +218,28 @@ export default function Dashboard() {
           )}
         </Section>
 
-        <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-3">
+        <div className="flex min-w-0 flex-[1_1_360px] flex-col gap-4">
           <Section title="资产分布" actions={<Link to="/portfolio/insights" className="text-xs font-medium text-accent-foreground hover:underline">分析 →</Link>}>
             {loadingSummary ? (
               <Skeleton className="h-28" />
             ) : summary && total > 0 ? (
               <>
-                <div className="mb-1 mt-1 flex h-2 gap-0.5 overflow-hidden rounded" aria-hidden="true">
+                <div className="mb-2 mt-1 flex h-3 gap-[3px] overflow-hidden rounded" aria-hidden="true">
                   {summary.byCategory.filter((c) => c.value > 0).map((c) => (
                     <i key={c.category} style={{ flex: c.value, background: categoryMeta[c.category].color }} />
                   ))}
                 </div>
                 <ul className="m-0 list-none p-0">
                   {summary.byCategory.map((c) => (
-                    <li key={c.category} className="flex items-center gap-2.5 border-t border-border py-1.5 first:border-t-0">
-                      <i className="size-2 rounded-[2px]" style={{ background: categoryMeta[c.category].color }} />
+                    <li key={c.category} className="flex items-center gap-3 border-t border-border py-2 first:border-t-0">
+                      <i className="size-3 rounded-[3px]" style={{ background: categoryMeta[c.category].color }} />
                       <span className="flex-1">{categoryMeta[c.category].name}</span>
                       {c.missing === c.count ? (
                         <span className="text-xs text-muted-foreground">待估值</span>
                       ) : (
                         <>
                           <span className="tabular text-xs text-muted-foreground">{money(c.value, currency, 0)}</span>
-                          <strong className="tabular w-12 text-right font-medium">{((c.value / total) * 100).toFixed(1)}%</strong>
+                          <strong className="tabular w-16 text-right font-semibold">{((c.value / total) * 100).toFixed(1)}%</strong>
                         </>
                       )}
                     </li>
@@ -256,8 +256,8 @@ export default function Dashboard() {
               <ul className="m-0 list-none p-0">
                 {activity.map((item) => (
                   <li key={`${item.module}-${item.text}-${item.date}`} className="border-t border-border first:border-t-0">
-                    <Link to={item.to} className="flex items-center gap-2.5 py-1.5 text-foreground hover:text-accent-foreground">
-                      <span className="w-8 shrink-0 rounded bg-muted py-px text-center text-[11px] text-muted-foreground">{item.module}</span>
+                    <Link to={item.to} className="flex items-center gap-3 py-2 text-foreground hover:text-accent-foreground">
+                      <span className="w-11 shrink-0 rounded-md bg-accent py-0.5 text-center text-xs font-medium text-accent-foreground">{item.module}</span>
                       <span className="min-w-0 flex-1 truncate">{item.text}</span>
                       <span className="tabular text-xs text-muted-foreground">{item.date.slice(5)}</span>
                     </Link>

@@ -145,7 +145,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
               type="button"
               onClick={handleLookup}
               disabled={lookupLoading || !formData.flight_number || !formData.date}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full px-5 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {lookupLoading ? (
                 <>
@@ -356,14 +356,14 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-zinc-700 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-600"
+          className="px-5 py-2.5 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-zinc-700 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-600"
         >
           取消
         </button>
         <button
           type="submit"
           disabled={loading}
-          className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+          className="px-5 py-2.5 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
         >
           {loading ? (isEditMode ? '保存中…' : '添加中…') : (isEditMode ? '保存修改' : '添加航班')}
         </button>

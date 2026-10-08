@@ -60,7 +60,7 @@ export default function GameDetail({ game, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose?.()}>
       <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl">
         {/* Header */}
-        <div className="relative px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
+        <div className="relative px-5 py-3 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{game.name}</h2>
             {details?.developers && (
@@ -251,13 +251,13 @@ function AchievementCard({ achievement, unlocked, formatUnlockTime }) {
             {achievement.name}
           </p>
           {unlocked && achievement.unlock_time > 0 && (
-            <span className="text-[10px] text-green-600 dark:text-green-400 flex-shrink-0">
+            <span className="text-xs text-green-600 dark:text-green-400 flex-shrink-0">
               {formatUnlockTime(achievement.unlock_time)}
             </span>
           )}
         </div>
         {achievement.description && (
-          <p className={`text-[10px] mt-0.5 line-clamp-2 ${
+          <p className={`text-xs mt-0.5 line-clamp-2 ${
             unlocked ? 'text-zinc-600 dark:text-zinc-300' : 'text-zinc-400 dark:text-zinc-500'
           }`}>
             {achievement.description}
@@ -429,7 +429,7 @@ function NewsTimelineCard({ item, formatDate, appid }) {
         {item.title}
       </p>
       {/* Date */}
-      <span className="text-[10px] text-zinc-500 dark:text-zinc-400">{formatDate(item.date)}</span>
+      <span className="text-xs text-zinc-500 dark:text-zinc-400">{formatDate(item.date)}</span>
     </a>
   );
 }

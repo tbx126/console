@@ -7,22 +7,22 @@ export function StatStrip({ items, loading, className, label }) {
   return (
     <section
       aria-label={label}
-      className={cn("grid overflow-hidden rounded-[10px] border border-border bg-card", className)}
-      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}
+      className={cn("grid overflow-hidden rounded-2xl border border-border bg-card", className)}
+      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}
     >
       {items.map((item) => {
         const body = (
           <>
-            <span className="text-xs text-muted-foreground">{item.label}</span>
+            <span className="text-sm text-muted-foreground">{item.label}</span>
             {loading ? (
-              <Skeleton className="my-0.5 h-6 w-20" />
+              <Skeleton className="my-0.5 h-7 w-24" />
             ) : (
-              <strong className="tabular text-lg font-semibold leading-snug tracking-tight">{item.value}</strong>
+              <strong className="tabular text-[22px] font-semibold leading-tight tracking-tight">{item.value}</strong>
             )}
-            {item.hint && <span className="truncate text-xs text-muted-foreground">{item.hint}</span>}
+            {item.hint && <span className="truncate text-sm text-muted-foreground">{item.hint}</span>}
           </>
         );
-        const cls = "flex min-w-0 flex-col gap-0.5 border-r border-b border-border px-4 py-2.5 -mb-px";
+        const cls = "flex min-w-0 flex-col gap-1 border-r border-b border-border px-5 py-3.5 -mb-px";
         return item.to ? (
           <Link key={item.label} to={item.to} className={cn(cls, "text-foreground hover:bg-muted")}>
             {body}

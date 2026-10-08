@@ -30,7 +30,7 @@
   --ring: #777bea;
   --destructive: #c84444;
   --radius: 0.625rem;
-  --topbar-height: 48px;
+  --topbar-height: 56px;
   /* 资产类别（顺序：股票、基金、现金、黄金、加密货币；已通过色盲与对比度检查） */
   --cat-stock: #555ce4;
   --cat-fund: #eb6834;
@@ -72,6 +72,10 @@
 @theme inline {
   --font-sans: "Geist", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* 舒适密度：最小辅助文字 13px */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: calc(1.25 / 0.8125);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -192,16 +196,9 @@
     border-color: var(--color-border);
   }
 
-  /* 紧凑密度：桌面端以 14px 为基准缩放所有 rem 尺寸；触屏设备保留 16px 以保证触控目标 */
   html {
     -webkit-text-size-adjust: 100%;
-    font-size: 14px;
-  }
-
-  @media (pointer: coarse) {
-    html {
-      font-size: 16px;
-    }
+    font-size: 16px;
   }
 
   body {
@@ -225,16 +222,17 @@
 
 /* 统一页面结构：页面头部 / 区块卡片 */
 @layer components {
+  /* 内容随窗口铺满；仅在超宽屏上限制宽度以保证可读性 */
   .page {
-    max-width: 1280px;
+    max-width: 2200px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
   }
 
   .page-title {
-    font-size: 20px;
+    font-size: 26px;
     line-height: 1.2;
     letter-spacing: -0.02em;
     font-weight: 650;
@@ -242,7 +240,7 @@
   }
 
   .page-meta {
-    font-size: 12px;
+    font-size: 14px;
     color: var(--muted-foreground);
   }
 

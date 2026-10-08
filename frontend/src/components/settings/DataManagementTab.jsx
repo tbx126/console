@@ -95,7 +95,7 @@ const ModuleSnapshotGroup = ({ summary, onRefresh }) => {
     <div className="border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden">
       <button
         onClick={handleToggle}
-        className="w-full flex items-center gap-3 px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+        className="w-full flex items-center gap-3 px-5 py-3 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
       >
         <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
           <FolderClock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -123,14 +123,14 @@ const ModuleSnapshotGroup = ({ summary, onRefresh }) => {
       {expanded && (
         <div className="bg-white dark:bg-zinc-900 max-h-60 overflow-y-auto">
           {loading ? (
-            <div className="px-4 py-3 text-sm text-zinc-500">Loading...</div>
+            <div className="px-5 py-3 text-sm text-zinc-500">Loading...</div>
           ) : snapshots.length === 0 ? (
-            <div className="px-4 py-3 text-sm text-zinc-400">No snapshots</div>
+            <div className="px-5 py-3 text-sm text-zinc-400">No snapshots</div>
           ) : (
             snapshots.map((snap) => (
               <div
                 key={snap.filename}
-                className="flex items-center gap-3 px-4 py-2 border-t border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                className="flex items-center gap-3 px-5 py-2.5 border-t border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
               >
                 <span className="flex-1 text-sm text-zinc-600 dark:text-zinc-400 font-mono">
                   {formatDate(snap.timestamp)}
@@ -202,7 +202,7 @@ const ArchiveRow = ({ archive, onRefresh }) => {
   };
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 border border-zinc-200 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+    <div className="flex items-center gap-3 px-5 py-3 border border-zinc-200 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
       <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0">
         <Archive className="h-4 w-4 text-violet-600 dark:text-violet-400" />
       </div>
@@ -222,7 +222,7 @@ const ArchiveRow = ({ archive, onRefresh }) => {
         )}
         <div className="flex gap-1 mt-1">
           {archive.modules.map((mod) => (
-            <Badge key={mod} variant="default" className="text-[10px] px-1.5 py-0">
+            <Badge key={mod} variant="default" className="text-xs px-1.5 py-0">
               {MODULE_LABELS[mod] || mod}
             </Badge>
           ))}
@@ -368,7 +368,7 @@ const DataManagementTab = () => {
 
         {/* Orphan Warning */}
         {overview?.orphan_modules.length > 0 && (
-          <div className="mt-3 flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
+          <div className="mt-3 flex items-center gap-3 px-5 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
             <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
             <div className="flex-1">
               <p className="text-sm text-amber-700 dark:text-amber-400">

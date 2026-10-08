@@ -17,7 +17,7 @@ const bytes = (n) => (n >= 1 << 30 ? `${(n / (1 << 30)).toFixed(1)} GB` : n >= 1
 
 function Row({ name, label, entries, life, hitRate, extra, onClear, busy }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1.4fr)_70px_90px_70px_auto] items-center gap-2.5 border-t border-border px-4 py-1.5">
+    <div className="grid grid-cols-[minmax(0,1.4fr)_70px_90px_70px_auto] items-center gap-2.5 border-t border-border px-5 py-2">
       <span className="min-w-0 truncate">
         {label} <span className="text-xs text-muted-foreground">{name}</span>
         {extra && <span className="block text-xs text-muted-foreground">{extra}</span>}
@@ -55,11 +55,11 @@ export default function CacheTab() {
   };
 
   if (isLoading) return <Skeleton className="m-4 h-40" />;
-  if (error) return <p className="px-4 py-6 text-muted-foreground">缓存信息加载失败。</p>;
+  if (error) return <p className="px-5 py-8 text-muted-foreground">缓存信息加载失败。</p>;
 
   return (
     <div>
-      <div className="grid grid-cols-[minmax(0,1.4fr)_70px_90px_70px_auto] gap-2.5 bg-muted px-4 py-1 text-xs text-muted-foreground">
+      <div className="grid grid-cols-[minmax(0,1.4fr)_70px_90px_70px_auto] gap-2.5 bg-muted px-5 py-2 text-xs text-muted-foreground">
         <span>后端缓存</span><span>条目</span><span>有效期</span><span>命中率</span><span className="w-12" />
       </div>
       {data.namespaces.map((ns) => (
@@ -94,7 +94,7 @@ export default function CacheTab() {
         onClear={() => clear('data')}
         busy={busy}
       />
-      <div className="grid grid-cols-[minmax(0,1.4fr)_70px_90px_70px_auto] gap-2.5 border-t border-border bg-muted px-4 py-1 text-xs text-muted-foreground">
+      <div className="grid grid-cols-[minmax(0,1.4fr)_70px_90px_70px_auto] gap-2.5 border-t border-border bg-muted px-5 py-2 text-xs text-muted-foreground">
         <span>浏览器缓存（本页会话）</span><span>条目</span><span>有效期</span><span>命中率</span><span className="w-12" />
       </div>
       <Row
@@ -107,7 +107,7 @@ export default function CacheTab() {
         onClear={clearBrowser}
         busy={busy}
       />
-      <div className="flex justify-end border-t border-border px-4 py-2.5">
+      <div className="flex justify-end border-t border-border px-5 py-2.5">
         <Button variant="outline" onClick={() => clear()} isLoading={busy}>清空全部后端缓存</Button>
       </div>
     </div>

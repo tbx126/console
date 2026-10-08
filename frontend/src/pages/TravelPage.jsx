@@ -103,11 +103,11 @@ export default function TravelPage() {
 
       {tab === 'flights' && (
         <Section bodyClassName="p-0">
-          <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
-            <label className="flex h-8 max-w-[320px] flex-[1_1_220px] items-center gap-1.5 rounded-[7px] border border-input bg-card px-2 text-muted-foreground focus-within:border-ring">
+          <div className="flex flex-wrap items-center gap-2 px-5 py-2.5">
+            <label className="flex h-9 max-w-[320px] flex-[1_1_220px] items-center gap-1.5 rounded-[10px] border border-input bg-card px-2 text-muted-foreground focus-within:border-ring">
               <Search className="size-3.5" aria-hidden="true" />
               <span className="sr-only">搜索航班</span>
-              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="航司、航班号或机场" className="w-full min-w-0 bg-transparent text-[13px] text-foreground outline-none" />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="航司、航班号或机场" className="w-full min-w-0 bg-transparent text-[15px] text-foreground outline-none" />
             </label>
             <label className="sr-only" htmlFor="flight-range">日期范围</label>
             <Select id="flight-range" value={range} onChange={(e) => { setRange(e.target.value); setLimit(PAGE); }} className="w-auto">
@@ -127,11 +127,11 @@ export default function TravelPage() {
           {flights.isLoading ? (
             <Skeleton className="mx-4 mb-4 h-48" />
           ) : flights.error ? (
-            <p className="px-4 py-8 text-center text-muted-foreground">航班加载失败。</p>
+            <p className="px-5 py-10 text-center text-muted-foreground">航班加载失败。</p>
           ) : shown.length ? (
             <>
               <FlightList flights={shown.slice(0, limit)} onEdit={(flight) => setModal({ flight })} onDelete={remove} />
-              <div className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between border-t border-border px-5 py-2.5 text-xs text-muted-foreground">
                 <span>显示 {Math.min(limit, shown.length)} / {shown.length} 段</span>
                 {limit < shown.length && (
                   <button type="button" onClick={() => setLimit((n) => n + PAGE)} className="font-medium text-accent-foreground hover:underline">加载更多</button>
@@ -139,7 +139,7 @@ export default function TravelPage() {
               </div>
             </>
           ) : (
-            <p className="px-4 py-8 text-center text-muted-foreground">
+            <p className="px-5 py-10 text-center text-muted-foreground">
               {flights.data?.length ? '没有符合条件的航班，请调整筛选条件。' : '还没有航班记录，点击“添加航班”开始。'}
             </p>
           )}
