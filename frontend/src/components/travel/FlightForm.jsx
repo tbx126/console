@@ -44,7 +44,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
 
       onSuccess();
     } catch (error) {
-      setError(error.response?.data?.detail || `Failed to ${isEditMode ? 'update' : 'create'} flight`);
+      setError(error.response?.data?.detail || (isEditMode ? '航班更新失败' : '航班创建失败'));
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
 
   const handleLookup = async () => {
     if (!formData.flight_number || !formData.date) {
-      setError('Please enter flight number and date first');
+      setError('请先填写航班号和日期');
       return;
     }
 
@@ -95,7 +95,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
         }));
       }
     } catch {
-      setError('Failed to lookup flight information');
+      setError('航班信息查询失败');
     } finally {
       setLookupLoading(false);
     }
@@ -112,25 +112,25 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
       <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
         <div className="flex items-center gap-2 mb-3">
           <Search className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Auto-fill Flight Info</span>
+          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">自动填写航班信息</span>
         </div>
         <div className="grid grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Flight Number
+              航班号
             </label>
             <input
               type="text"
               name="flight_number"
               value={formData.flight_number}
               onChange={handleChange}
-              placeholder="e.g., CA123"
+              placeholder="例如 CA123"
               className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Date
+              日期
             </label>
             <input
               type="date"
@@ -150,12 +150,12 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
               {lookupLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Searching...
+                  查询中…
                 </>
               ) : (
                 <>
                   <Search className="w-4 h-4" />
-                  Lookup
+                  查询
                 </>
               )}
             </button>
@@ -163,7 +163,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
         </div>
         {lookupResult && (
           <div className={`mt-3 text-sm ${lookupResult.success ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
-            {lookupResult.success ? `Found via ${lookupResult.source}` : lookupResult.error || 'Flight not found'}
+            {lookupResult.success ? `已通过 ${lookupResult.source} 找到` : lookupResult.error || '未找到该航班'}
           </div>
         )}
       </div>
@@ -171,7 +171,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Airline *
+            航空公司 *
           </label>
           <input
             type="text"
@@ -179,14 +179,14 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
             value={formData.airline}
             onChange={handleChange}
             required
-            placeholder="e.g., United Airlines"
+            placeholder="例如 新加坡航空"
             className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Flight Number *
+            航班号 *
           </label>
           <input
             type="text"
@@ -194,7 +194,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
             value={formData.flight_number}
             onChange={handleChange}
             required
-            placeholder="e.g., UA123"
+            placeholder="例如 SQ802"
             className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -203,7 +203,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Origin *
+            出发地 *
           </label>
           <input
             type="text"
@@ -211,14 +211,14 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
             value={formData.origin}
             onChange={handleChange}
             required
-            placeholder="e.g., SFO"
+            placeholder="例如 SIN"
             className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Destination *
+            目的地 *
           </label>
           <input
             type="text"
@@ -226,7 +226,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
             value={formData.destination}
             onChange={handleChange}
             required
-            placeholder="e.g., JFK"
+            placeholder="例如 PEK"
             className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -235,7 +235,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
       <div className="grid grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Date *
+            日期 *
           </label>
           <input
             type="date"
@@ -249,7 +249,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Departure Time
+            起飞时间
           </label>
           <input
             type="time"
@@ -262,7 +262,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Arrival Time
+            到达时间
           </label>
           <input
             type="time"
@@ -277,7 +277,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
       <div className="grid grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Distance (km)
+            距离（km）
           </label>
           <input
             type="number"
@@ -293,7 +293,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Cost
+            费用
           </label>
           <input
             type="number"
@@ -309,7 +309,7 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Class
+            舱位
           </label>
           <select
             name="travel_class"
@@ -317,37 +317,37 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="economy">Economy</option>
-            <option value="business">Business</option>
-            <option value="first">First Class</option>
+            <option value="economy">经济舱</option>
+            <option value="business">公务舱</option>
+            <option value="first">头等舱</option>
           </select>
         </div>
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Seat
+          座位
         </label>
         <input
           type="text"
           name="seat"
           value={formData.seat}
           onChange={handleChange}
-          placeholder="e.g., 12A"
+          placeholder="例如 12A"
           className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Notes
+          备注
         </label>
         <textarea
           name="notes"
           value={formData.notes}
           onChange={handleChange}
           rows="3"
-          placeholder="Any additional notes..."
+          placeholder="其他备注…"
           className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -358,14 +358,14 @@ const FlightForm = ({ flight, onSuccess, onCancel }) => {
           onClick={onCancel}
           className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-zinc-700 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-600"
         >
-          Cancel
+          取消
         </button>
         <button
           type="submit"
           disabled={loading}
           className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
         >
-          {loading ? (isEditMode ? 'Saving...' : 'Adding...') : (isEditMode ? 'Save Changes' : 'Add Flight')}
+          {loading ? (isEditMode ? '保存中…' : '添加中…') : (isEditMode ? '保存修改' : '添加航班')}
         </button>
       </div>
     </form>

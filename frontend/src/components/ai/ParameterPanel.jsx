@@ -36,12 +36,12 @@ const ParameterPanel = ({ params, onChange, isOpen, defaultSystemPrompt }) => {
       <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-700">
         <div className="flex items-center gap-2">
           <Settings2 className="h-5 w-5 text-violet-600" />
-          <span className="font-medium text-zinc-900 dark:text-zinc-100">Parameters</span>
+          <span className="font-medium text-zinc-900 dark:text-zinc-100">参数</span>
         </div>
         <button
           onClick={handleReset}
           className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-          title="Reset to defaults"
+          title="恢复默认" aria-label="恢复默认"
         >
           <RotateCcw className="h-4 w-4 text-zinc-500" />
         </button>
@@ -53,7 +53,7 @@ const ParameterPanel = ({ params, onChange, isOpen, defaultSystemPrompt }) => {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Temperature
+              温度 Temperature
             </label>
             <span className="text-sm text-zinc-500 dark:text-zinc-400 font-mono">
               {localParams.temperature.toFixed(2)}
@@ -69,7 +69,7 @@ const ParameterPanel = ({ params, onChange, isOpen, defaultSystemPrompt }) => {
             className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-violet-600"
           />
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Controls randomness. Lower = more focused, higher = more creative.
+            控制随机性：越低越稳定，越高越有创意。
           </p>
         </div>
 
@@ -93,7 +93,7 @@ const ParameterPanel = ({ params, onChange, isOpen, defaultSystemPrompt }) => {
             className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-violet-600"
           />
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Nucleus sampling. Lower = more focused on likely tokens.
+            核采样：越低越集中于高概率词。
           </p>
         </div>
 
@@ -101,7 +101,7 @@ const ParameterPanel = ({ params, onChange, isOpen, defaultSystemPrompt }) => {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Max Tokens
+              最大 Tokens
             </label>
             <span className="text-sm text-zinc-500 dark:text-zinc-400 font-mono">
               {localParams.max_tokens}
@@ -117,23 +117,23 @@ const ParameterPanel = ({ params, onChange, isOpen, defaultSystemPrompt }) => {
             className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-violet-600"
           />
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Maximum length of the response.
+            回复的最大长度。
           </p>
         </div>
 
         {/* System Prompt */}
         <div className="space-y-2 flex-1 flex flex-col min-h-0">
           <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            System Prompt
+            系统提示词
           </label>
           <textarea
             value={localParams.system_prompt}
             onChange={(e) => handleChange('system_prompt', e.target.value)}
-            placeholder="Enter custom instructions for the AI..."
+            placeholder="输入给 AI 的自定义指令…"
             className="flex-1 min-h-[200px] px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
           />
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Custom instructions that define the AI's behavior and personality.
+            定义 AI 行为与风格的自定义指令。
           </p>
         </div>
       </div>

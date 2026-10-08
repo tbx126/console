@@ -104,7 +104,7 @@ export default function GameList({ refresh, onGameSelect }) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
           <input
             type="text"
-            placeholder="Search games..."
+            placeholder="搜索游戏…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -116,21 +116,21 @@ export default function GameList({ refresh, onGameSelect }) {
             <button
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-zinc-700/50'}`}
-              title="Grid View (V1)"
+              title="网格视图" aria-label="网格视图"
             >
               <LayoutGrid className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
             </button>
             <button
               onClick={() => setViewMode('masonry')}
               className={`p-1.5 rounded ${viewMode === 'masonry' ? 'bg-white dark:bg-zinc-700 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-zinc-700/50'}`}
-              title="Masonry View (V2)"
+              title="瀑布流视图" aria-label="瀑布流视图"
             >
               <Sparkles className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
             </button>
             <button
               onClick={() => setViewMode('compact')}
               className={`p-1.5 rounded ${viewMode === 'compact' ? 'bg-white dark:bg-zinc-700 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-zinc-700/50'}`}
-              title="Compact View"
+              title="紧凑视图" aria-label="紧凑视图"
             >
               <LayoutList className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
             </button>
@@ -140,13 +140,13 @@ export default function GameList({ refresh, onGameSelect }) {
             onChange={(e) => setSortBy(e.target.value)}
             className="px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm"
           >
-            <option value="playtime">Most Played</option>
-            <option value="recent">Recently Played</option>
-            <option value="name">Name</option>
+            <option value="playtime">游玩最多</option>
+            <option value="recent">最近游玩</option>
+            <option value="name">名称</option>
           </select>
           <Button variant="outline" onClick={handleSync} disabled={syncing}>
             <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-            Sync
+            同步
           </Button>
         </div>
       </div>
@@ -157,7 +157,7 @@ export default function GameList({ refresh, onGameSelect }) {
           <div className="flex items-center gap-3 mb-2">
             <Download className="h-4 w-4 text-violet-600 dark:text-violet-400 animate-pulse" />
             <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
-              Caching game data...
+              正在缓存游戏数据…
             </span>
             <span className="text-xs text-violet-600 dark:text-violet-400 ml-auto">
               {cacheStatus.completed} / {cacheStatus.total}
@@ -180,7 +180,7 @@ export default function GameList({ refresh, onGameSelect }) {
       {/* Games Grid */}
       {filteredGames.length === 0 ? (
         <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
-          <p>No games found. Click Sync to fetch from Steam.</p>
+          <p>没有找到游戏。点击“同步”从 Steam 获取。</p>
         </div>
       ) : viewMode === 'grid' ? (
         // V1: Vertical card grid layout

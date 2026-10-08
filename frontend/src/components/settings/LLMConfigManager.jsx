@@ -4,14 +4,14 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import aiApi from '../../services/aiApi';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const CAPABILITIES = [
-  { key: 'supports_vision', label: 'Vision', icon: Eye, description: 'Can process image input' },
-  { key: 'supports_reasoning', label: 'Reasoning', icon: Brain, description: 'Has enhanced reasoning mode' },
+  { key: 'supports_vision', label: '视觉', icon: Eye, description: '可处理图片输入' },
+  { key: 'supports_reasoning', label: '推理', icon: Brain, description: '支持增强推理模式' },
   { key: 'supports_mcp', label: 'MCP', icon: Plug, description: 'Supports MCP integrations' },
-  { key: 'supports_skills', label: 'Skills', icon: Zap, description: 'Can invoke skills and tools' },
-  { key: 'supports_streaming', label: 'Streaming', icon: MessageSquare, description: 'Supports streamed responses' }
+  { key: 'supports_skills', label: '技能', icon: Zap, description: '可调用技能与工具' },
+  { key: 'supports_streaming', label: '流式', icon: MessageSquare, description: '支持流式回复' }
 ];
 
 const ConfigCard = ({ config, onEdit, onDelete, onActivate }) => {
@@ -37,7 +37,7 @@ const ConfigCard = ({ config, onEdit, onDelete, onActivate }) => {
         </div>
         <div className="flex items-center gap-2">
           {!config.is_default && (
-            <Button variant="ghost" size="sm" onClick={onActivate} title="Set as default">
+            <Button variant="ghost" size="sm" onClick={onActivate} title="设为默认" aria-label="设为默认">
               <Check className="h-4 w-4" />
             </Button>
           )}
@@ -77,7 +77,7 @@ const ConfigForm = ({ formData, setFormData, editingId, onSubmit, onCancel }) =>
   return (
     <div className="p-4 border border-zinc-200 dark:border-zinc-700 rounded-lg space-y-4">
       <h3 className="font-medium text-zinc-900 dark:text-zinc-100">
-        {editingId ? 'Edit Config' : 'New Config'}
+        {editingId ? '编辑配置' : '新建配置'}
       </h3>
 
       <div className="grid grid-cols-2 gap-4">
@@ -86,7 +86,7 @@ const ConfigForm = ({ formData, setFormData, editingId, onSubmit, onCancel }) =>
           <Input
             value={formData.name}
             onChange={(event) => setFormData({ ...formData, name: event.target.value })}
-            placeholder="My LLM Config"
+            placeholder="我的模型配置"
           />
         </div>
         <div>
@@ -117,14 +117,14 @@ const ConfigForm = ({ formData, setFormData, editingId, onSubmit, onCancel }) =>
           placeholder="https://api.openai.com/v1"
         />
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-          Leave empty to use the provider default endpoint
+          留空则使用服务商默认地址
         </p>
       </div>
 
       <div>
-        <Label>Capabilities</Label>
+        <Label>能力</Label>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
-          Select the capabilities supported by this model
+          选择该模型支持的能力
         </p>
         <div className="grid grid-cols-2 gap-2">
           {CAPABILITIES.map((capability) => {
@@ -165,7 +165,7 @@ const ConfigForm = ({ formData, setFormData, editingId, onSubmit, onCancel }) =>
           {editingId ? 'Update' : 'Create'}
         </Button>
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          取消
         </Button>
       </div>
     </div>
@@ -210,7 +210,7 @@ const LLMConfigManager = () => {
       const data = await aiApi.getConfigs();
       setConfigs(data);
     } catch {
-      toast.error('Failed to load configs');
+      toast.error('配置加载失败');
     } finally {
       setLoading(false);
     }
@@ -222,22 +222,22 @@ const LLMConfigManager = () => {
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.api_key || !formData.model) {
-      toast.error('Name, API key and model are required');
+      toast.error('名称、API 密钥和模型为必填项');
       return;
     }
 
     try {
       if (editingId) {
         await aiApi.updateConfigProfile(editingId, formData);
-        toast.success('Config updated');
+        toast.success('配置已更新');
       } else {
         await aiApi.createConfigProfile(formData);
-        toast.success('Config created');
+        toast.success('配置已创建');
       }
       await loadConfigs();
       resetForm();
     } catch {
-      toast.error('Failed to save config');
+      toast.error('配置保存失败');
     }
   };
 
@@ -262,20 +262,20 @@ const LLMConfigManager = () => {
 
     try {
       await aiApi.deleteConfigProfile(id);
-      toast.success('Config deleted');
+      toast.success('配置已删除');
       await loadConfigs();
     } catch {
-      toast.error('Failed to delete');
+      toast.error('删除失败');
     }
   };
 
   const handleActivate = async (id) => {
     try {
       await aiApi.activateConfig(id);
-      toast.success('Config activated');
+      toast.success('已设为默认配置');
       await loadConfigs();
     } catch {
-      toast.error('Failed to activate');
+      toast.error('设置默认失败');
     }
   };
 
@@ -298,7 +298,7 @@ const LLMConfigManager = () => {
 
         {configs.length === 0 && !showForm && (
           <div className="text-center py-8 text-zinc-500">
-            No configs yet. Add your first one.
+            还没有配置，先添加一个吧。
           </div>
         )}
       </div>
@@ -314,7 +314,7 @@ const LLMConfigManager = () => {
       ) : (
         <Button onClick={() => setShowForm(true)} className="w-full">
           <Plus className="h-4 w-4 mr-2" />
-          Add New Config
+          添加配置
         </Button>
       )}
     </div>

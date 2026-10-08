@@ -5,11 +5,11 @@ import { Label } from '../ui/Label';
 
 export default function FlightFilters({ filters, onFilterChange, availableAirlines = [] }) {
   const dateRangeOptions = [
-    { value: 'thisMonth', label: 'This Month' },
-    { value: 'lastMonth', label: 'Last Month' },
-    { value: 'last3Months', label: 'Last 3 Months' },
-    { value: 'thisYear', label: 'This Year' },
-    { value: 'all', label: 'All Time' }
+    { value: 'thisMonth', label: '本月' },
+    { value: 'lastMonth', label: '上月' },
+    { value: 'last3Months', label: '近 3 个月' },
+    { value: 'thisYear', label: '今年' },
+    { value: 'all', label: '全部' }
   ];
 
   const handleReset = () => {
@@ -22,7 +22,7 @@ export default function FlightFilters({ filters, onFilterChange, availableAirlin
   return (
     <div className="w-64 bg-white dark:bg-zinc-800 rounded-2xl shadow-air p-6 sticky top-6 h-fit space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Filters</h3>
+        <h3 className="font-semibold text-lg text-zinc-900 dark:text-zinc-100">筛选</h3>
         <Button
           variant="ghost"
           size="sm"
@@ -37,7 +37,7 @@ export default function FlightFilters({ filters, onFilterChange, availableAirlin
       <div className="space-y-2">
         <Label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
           <Calendar className="h-4 w-4" />
-          Date Range
+          日期范围
         </Label>
         <Select
           value={filters.dateRange}
@@ -57,7 +57,7 @@ export default function FlightFilters({ filters, onFilterChange, availableAirlin
         <div className="space-y-2">
           <Label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
             <Plane className="h-4 w-4" />
-            Airlines
+            航司
           </Label>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {availableAirlines.map(airline => (

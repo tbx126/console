@@ -103,35 +103,31 @@ export const ChatInterface = memo(function ChatInterface({
     <div className="flex-1 overflow-y-auto">
       {messages.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-full text-center px-4">
-          <div className="w-20 h-20 bg-gradient-to-br from-violet-100 to-violet-50 dark:from-violet-900/30 dark:to-violet-800/20 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-            <Sparkles className="w-10 h-10 text-violet-600 dark:text-violet-400" />
+          <div className="mb-6 flex size-16 items-center justify-center rounded-2xl bg-accent">
+            <Sparkles className="size-8 text-accent-foreground" />
           </div>
           <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
             AI 助手
           </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mb-8">
-            您的个人数据助手。使用自然语言记录支出、航班、投资等信息。
+          <p className="text-sm text-muted-foreground max-w-sm mb-6">
+            你的个人数据助手：自然语言提问、分析图片，或直接说出航班信息来记录。
           </p>
 
-          {/* Quick suggestions */}
-          <div className="grid grid-cols-2 gap-3 max-w-md">
-            <div className="flex items-center gap-2 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-600 dark:text-slate-300 hover:border-violet-300 dark:hover:border-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors cursor-pointer">
-              <Sparkles className="w-4 h-4 text-violet-500" />
-              <span>记录支出</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-600 dark:text-slate-300 hover:border-violet-300 dark:hover:border-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors cursor-pointer">
-              <MessageSquare className="w-4 h-4 text-violet-500" />
-              <span>记录航班</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-600 dark:text-slate-300 hover:border-violet-300 dark:hover:border-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors cursor-pointer">
-              <Sparkles className="w-4 h-4 text-violet-500" />
-              <span>跟踪投资</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-600 dark:text-slate-300 hover:border-violet-300 dark:hover:border-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors cursor-pointer">
-              <Image className="w-4 h-4 text-violet-500" />
-              <span>分析收据</span>
-            </div>
-          </div>
+          {/* 示例（纯文本提示，不是按钮） */}
+          <ul className="flex max-w-md flex-col gap-2 text-left text-sm text-muted-foreground">
+            <li className="flex items-center gap-2">
+              <MessageSquare className="size-4 shrink-0 text-accent-foreground" aria-hidden="true" />
+              “昨天坐 SQ802 从新加坡飞北京，经济舱”
+            </li>
+            <li className="flex items-center gap-2">
+              <Sparkles className="size-4 shrink-0 text-accent-foreground" aria-hidden="true" />
+              “帮我总结今年的飞行情况”
+            </li>
+            <li className="flex items-center gap-2">
+              <Image className="size-4 shrink-0 text-accent-foreground" aria-hidden="true" />
+              “上传一张登机牌，提取航班信息”
+            </li>
+          </ul>
         </div>
       ) : (
         <div className="p-6 space-y-4">

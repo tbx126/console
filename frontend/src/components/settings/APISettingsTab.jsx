@@ -1,26 +1,15 @@
 import { useState, useEffect } from 'react';
 import {
   Save, Check, Eye, EyeOff, ChevronDown, ChevronRight,
-  TrendingUp, Plane, Map, Gamepad2, Star, CheckCircle2
+  Plane, Map, Gamepad2, Star, CheckCircle2
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 // API 配置分组
 const API_GROUPS = [
-  {
-    id: 'investment',
-    label: '投资 API',
-    icon: TrendingUp,
-    description: '股票、加密货币、汇率数据',
-    fields: [
-      { key: 'alpha_vantage_key', label: 'Alpha Vantage', placeholder: 'Your Alpha Vantage API key', hasKey: 'has_alpha_vantage', recommended: true },
-      { key: 'coingecko_key', label: 'CoinGecko', placeholder: 'Your CoinGecko API key', hasKey: 'has_coingecko' },
-      { key: 'exchange_rate_key', label: 'Exchange Rate', placeholder: 'Your Exchange Rate API key', hasKey: 'has_exchange_rate' }
-    ]
-  },
   {
     id: 'flight',
     label: '航班 API',
@@ -187,7 +176,7 @@ const APISettingsTab = () => {
       const data = await response.json();
       setApiKeys(data);
     } catch {
-      toast.error('Failed to load API keys');
+      toast.error('API 密钥加载失败');
     } finally {
       setLoading(false);
     }
@@ -207,14 +196,14 @@ const APISettingsTab = () => {
       });
 
       if (response.ok) {
-        toast.success('API keys saved');
+        toast.success('API 密钥已保存');
         setFormData({});
         loadApiKeys();
       } else {
-        toast.error('Failed to save');
+        toast.error('保存失败');
       }
     } catch {
-      toast.error('Failed to save');
+      toast.error('保存失败');
     } finally {
       setSaving(false);
     }
@@ -247,7 +236,7 @@ const APISettingsTab = () => {
         <div className="flex justify-end pt-4 border-t border-zinc-200 dark:border-zinc-700">
           <Button onClick={handleSave} disabled={saving}>
             <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? '保存中…' : '保存修改'}
           </Button>
         </div>
       )}

@@ -43,7 +43,7 @@ const FlightList = ({ refresh, filters, searchQuery, sortBy, viewMode, onEdit, o
         onAirlinesLoaded(airlines);
       }
     } catch {
-      setError('Failed to load flights');
+      setError('航班加载失败');
     } finally {
       setLoading(false);
     }
@@ -54,13 +54,13 @@ const FlightList = ({ refresh, filters, searchQuery, sortBy, viewMode, onEdit, o
   }, [loadFlights, refresh]);
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this flight?')) return;
+    if (!confirm('确定删除这条航班记录吗？')) return;
 
     try {
       await travelApi.deleteFlight(id);
       await loadFlights();
     } catch {
-      alert('Failed to delete flight');
+      alert('删除航班失败');
     }
   };
 
@@ -114,7 +114,7 @@ const FlightList = ({ refresh, filters, searchQuery, sortBy, viewMode, onEdit, o
   if (processedFlights.length === 0) {
     return (
       <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
-        No flights found. Try adjusting your filters.
+        没有符合条件的航班，请调整筛选条件。
       </div>
     );
   }
@@ -160,14 +160,14 @@ const FlightList = ({ refresh, filters, searchQuery, sortBy, viewMode, onEdit, o
                 <button
                   onClick={() => onEdit?.(flight)}
                   className="text-zinc-400 hover:text-violet-600 transition-colors"
-                  title="Edit"
+                  title="编辑" aria-label="编辑"
                 >
                   <Edit className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => handleDelete(flight.id)}
                   className="text-zinc-400 hover:text-red-600 transition-colors"
-                  title="Delete"
+                  title="删除" aria-label="删除"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

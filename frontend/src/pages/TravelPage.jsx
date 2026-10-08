@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 import { Plus, Filter } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { PageHeader } from '../components/ui/PageHeader';
+import { SegmentedTabs } from '../components/ui/SegmentedTabs';
 import Modal from '../components/common/Modal';
 import FlightForm from '../components/travel/FlightForm';
 import FlightList from '../components/travel/FlightList';
@@ -13,9 +15,9 @@ import FlightMap from '../components/travel/FlightMap';
 import { useAIDataRefresh } from '../hooks/useAIDataRefresh';
 
 const tabs = [
-  { id: 'flights', label: 'Flights' },
-  { id: 'stats', label: 'Statistics' },
-  { id: 'map', label: 'Map' }
+  { id: 'flights', label: '航班' },
+  { id: 'stats', label: '统计' },
+  { id: 'map', label: '地图' }
 ];
 
 const TravelPage = () => {
@@ -56,47 +58,26 @@ const TravelPage = () => {
   useAIDataRefresh(handleDataUpdate);
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
-      <div className="bg-white dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">Travel</h1>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">Log your flights and track statistics</p>
-            </div>
-            <Button onClick={() => setShowFlightModal(true)} className="mt-1">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Flight
-            </Button>
-          </div>
-        </div>
-      </div>
+    <div className="page">
+      <PageHeader
+        eyebrow="Travel log"
+        title="旅行"
+        description="航班记录、航线地图与航司统计。"
+        actions={
+          <Button onClick={() => setShowFlightModal(true)}>
+            <Plus />
+            添加航班
+          </Button>
+        }
+      />
 
-      <div className="container mx-auto px-6 py-6">
+      <div className="mb-5">
         <TravelStats refresh={refreshKey} />
       </div>
 
-      <div className="bg-white dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700">
-        <div className="container mx-auto px-6">
-          <nav className="flex space-x-8">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-violet-600 text-violet-600'
-                    : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:border-zinc-300'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
+      <SegmentedTabs className="mb-5" label="旅行视图" tabs={tabs} value={activeTab} onChange={setActiveTab} />
 
-      <div className="container mx-auto px-6 py-6">
+      <div>
         <div className="flex gap-6">
           {activeTab === 'flights' && (
             <div className="hidden md:block">
@@ -117,8 +98,8 @@ const TravelPage = () => {
                     onClick={() => setShowMobileFilters(true)}
                     className="w-full"
                   >
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filters
+                    <Filter />
+                    筛选
                   </Button>
                 </div>
 
@@ -134,7 +115,7 @@ const TravelPage = () => {
             )}
 
             {activeTab === 'flights' && (
-              <Card className="shadow-sm">
+              <Card>
                 <FlightList
                   refresh={refreshKey}
                   filters={filters}
@@ -148,13 +129,13 @@ const TravelPage = () => {
             )}
 
             {activeTab === 'stats' && (
-              <Card className="shadow-sm">
+              <Card>
                 <AirlineStats />
               </Card>
             )}
 
             {activeTab === 'map' && (
-              <Card className="shadow-sm p-6">
+              <Card className="p-6">
                 <FlightMap />
               </Card>
             )}
@@ -165,7 +146,7 @@ const TravelPage = () => {
       <Modal
         isOpen={showFlightModal}
         onClose={handleCloseModal}
-        title={editingFlight ? 'Edit Flight' : 'Add New Flight'}
+        title={editingFlight ? '编辑航班' : '添加航班'}
       >
         <FlightForm
           flight={editingFlight}
@@ -177,7 +158,7 @@ const TravelPage = () => {
       <Modal
         isOpen={showMobileFilters}
         onClose={() => setShowMobileFilters(false)}
-        title="Flight Filters"
+        title="航班筛选"
       >
         <FlightFilters
           filters={filters}

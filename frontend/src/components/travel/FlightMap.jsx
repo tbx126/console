@@ -88,7 +88,7 @@ const InfoPanel = ({ mousePosition, selectedAirport, selectedRoute, mapData }) =
       <div className="px-4 py-3 bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-700">
         <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
           <Info className="h-4 w-4 text-violet-500 dark:text-violet-400" />
-          Map Information
+          地图信息
         </h3>
       </div>
 
@@ -96,7 +96,7 @@ const InfoPanel = ({ mousePosition, selectedAirport, selectedRoute, mapData }) =
       <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700">
         <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 mb-2">
           <Navigation className="h-3 w-3" />
-          <span>Cursor Position</span>
+          <span>光标位置</span>
         </div>
         {mousePosition ? (
           <div className="grid grid-cols-2 gap-2 text-sm">
@@ -135,7 +135,7 @@ const AirportInfo = ({ airport }) => {
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
         <MapPin className="h-3 w-3 text-violet-500 dark:text-violet-400" />
-        <span>Selected Airport</span>
+        <span>已选机场</span>
       </div>
       <div className="text-center py-4">
         <div className="text-3xl font-bold text-violet-600 dark:text-violet-400">{airport.code}</div>
@@ -168,7 +168,7 @@ const RouteInfo = ({ route }) => (
   <div className="p-4 space-y-4">
     <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
       <Plane className="h-3 w-3 text-blue-500 dark:text-blue-400" />
-      <span>Selected Route</span>
+      <span>已选航线</span>
     </div>
     <div className="text-center py-4">
       <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
@@ -202,7 +202,7 @@ const DefaultInfo = ({ mapData }) => (
   <div className="p-4 space-y-4">
     <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
       <Globe className="h-3 w-3" />
-      <span>Overview</span>
+      <span>概览</span>
     </div>
     <div className="text-center py-6 text-zinc-400 dark:text-zinc-500">
       <Map className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -356,11 +356,11 @@ const FlightMapInner = ({ apiKey, mapData }) => {
       <div className="flex gap-6 text-xs text-zinc-500 dark:text-zinc-400 mt-2">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-violet-500"></div>
-          <span>Airport</span>
+          <span>机场</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-6 h-0.5 bg-blue-500"></div>
-          <span>Route</span>
+          <span>航线</span>
         </div>
       </div>
     </div>

@@ -162,7 +162,7 @@ function LeftColumn({ game, details, formatPlaytime, formatReleaseDate }) {
       <div className="flex-1 mt-4 space-y-3 overflow-y-auto">
         {details?.short_description && (
           <div>
-            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-1 text-sm">About</h3>
+            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-1 text-sm">简介</h3>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed line-clamp-4">
               {details.short_description}
             </p>
@@ -231,7 +231,7 @@ function AchievementsSection({ achievements, unlockedCount, formatUnlockTime }) 
     return (
       <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
         <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">No achievements available</p>
+        <p className="text-sm">暂无成就</p>
       </div>
     );
   }
@@ -244,7 +244,7 @@ function AchievementsSection({ achievements, unlockedCount, formatUnlockTime }) 
     <div className="h-full flex flex-col">
       <div className="flex items-center gap-2 mb-3 flex-shrink-0">
         <Star className="h-4 w-4 text-amber-500" />
-        <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Achievements</h3>
+        <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">成就</h3>
         <span className="text-xs text-zinc-500 dark:text-zinc-400 ml-auto">
           {unlockedCount}/{achievements.length}
         </span>
@@ -375,7 +375,7 @@ function NewsTimeline({ news, appid }) {
     return (
       <div className="text-center py-4 text-zinc-500 dark:text-zinc-400">
         <Newspaper className="h-6 w-6 mx-auto mb-1 opacity-50" />
-        <p className="text-xs">No news available</p>
+        <p className="text-xs">暂无新闻</p>
       </div>
     );
   }
@@ -385,7 +385,7 @@ function NewsTimeline({ news, appid }) {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Newspaper className="h-4 w-4 text-violet-500" />
-          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">News & Updates</h3>
+          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">新闻与更新</h3>
         </div>
         <div className="flex gap-1">
           <button onClick={() => scroll(-1)} className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700">

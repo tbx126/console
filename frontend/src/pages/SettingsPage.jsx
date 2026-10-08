@@ -1,53 +1,31 @@
 import { useState } from 'react';
 import { Layers, Settings, Key, Database } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
+import { PageHeader } from '../components/ui/PageHeader';
+import { SegmentedTabs } from '../components/ui/SegmentedTabs';
 import LLMConfigManager from '../components/settings/LLMConfigManager';
 import APISettingsTab from '../components/settings/APISettingsTab';
 import DataManagementTab from '../components/settings/DataManagementTab';
 
 const TABS = [
-  { id: 'profiles', label: 'Model Profiles', icon: Layers },
-  { id: 'api', label: 'API Keys', icon: Key },
-  { id: 'data', label: 'Data', icon: Database },
-  { id: 'general', label: 'General', icon: Settings, disabled: true }
+  { id: 'profiles', label: '模型配置', icon: Layers },
+  { id: 'api', label: 'API 密钥', icon: Key },
+  { id: 'data', label: '数据', icon: Database },
+  { id: 'general', label: '通用', icon: Settings, disabled: true }
 ];
 
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState('profiles');
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Settings</h1>
-        <p className="text-zinc-600 dark:text-zinc-400 mt-2">Configure your application</p>
-      </div>
+    <div className="page">
+      <PageHeader eyebrow="Preferences" title="设置" description="模型、API 密钥与数据备份。" />
 
-      <div className="flex gap-6">
-        {/* Tab Navigation */}
-        <div className="w-48 flex-shrink-0">
-          <nav className="space-y-1">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => !tab.disabled && setActiveTab(tab.id)}
-                disabled={tab.disabled}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
-                    : tab.disabled
-                    ? 'text-zinc-300 dark:text-zinc-600 cursor-not-allowed'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                }`}
-              >
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
+      <div className="flex flex-col gap-5">
+        <SegmentedTabs label="设置分类" tabs={TABS} value={activeTab} onChange={setActiveTab} />
 
         {/* Tab Content */}
-        <Card className="flex-1 max-w-3xl">
+        <Card className="max-w-4xl">
           <CardHeader>
             <CardTitle>
               {TABS.find(t => t.id === activeTab)?.label}
@@ -64,8 +42,8 @@ const SettingsPage = () => {
               <DataManagementTab />
             )}
             {activeTab === 'general' && (
-              <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
-                Coming soon...
+              <div className="py-8 text-center text-muted-foreground">
+                即将推出
               </div>
             )}
           </CardContent>

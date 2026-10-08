@@ -13,10 +13,7 @@ class ChatMessage(BaseModel):
 
 class ParsedDataType(str, Enum):
     """解析数据类型"""
-    EXPENSE = "expense"
-    INCOME = "income"
     FLIGHT = "flight"
-    INVESTMENT = "investment"
     PROJECT = "project"
 
 
