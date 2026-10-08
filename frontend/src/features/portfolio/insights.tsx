@@ -19,7 +19,7 @@ const short = (v: number, c: Currency) => {
 
 function Card({ title, meta, actions, children, className = "" }: { title: string; meta?: string; actions?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
-    <section className={`min-w-0 rounded-[10px] border border-border bg-card ${className}`}>
+    <section className={`min-w-0 rounded-2xl border border-border bg-card ${className}`}>
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-3">
         <div className="flex min-w-0 items-baseline gap-2"><h2 className="m-0 text-sm font-semibold">{title}</h2>{meta && <span className="truncate text-xs text-muted-foreground">{meta}</span>}</div>
         {actions}
@@ -159,7 +159,7 @@ export default function PortfolioInsights({ rows, history, currency, missing, de
             </div>
             <div className="mt-3 border-t border-border pt-3">
               <div className="mb-1.5 flex justify-between text-xs text-muted-foreground"><span>持仓集中度</span><span>前 3 项 {(top3 * 100).toFixed(1)}% · 前 10 项 {(top10Share * 100).toFixed(1)}%</span></div>
-              <div className="flex h-5 gap-0.5 overflow-hidden rounded text-[11px]" role="img" aria-label={`前 3 项占 ${(top3 * 100).toFixed(1)}%，第 4 至 10 项占 ${((top10Share - top3) * 100).toFixed(1)}%，其余 ${((1 - top10Share) * 100).toFixed(1)}%`}>
+              <div className="flex h-5 gap-0.5 overflow-hidden rounded text-xs" role="img" aria-label={`前 3 项占 ${(top3 * 100).toFixed(1)}%，第 4 至 10 项占 ${((top10Share - top3) * 100).toFixed(1)}%，其余 ${((1 - top10Share) * 100).toFixed(1)}%`}>
                 <span className="flex items-center bg-primary pl-1.5 text-primary-foreground" style={{ flex: top3 || 0.0001 }}>前 3</span>
                 {top10Share - top3 > 0.001 && <span className="flex items-center bg-accent pl-1.5 text-accent-foreground" style={{ flex: top10Share - top3 }}>4–10</span>}
                 {1 - top10Share > 0.001 && <span className="flex items-center bg-muted pl-1.5 text-muted-foreground" style={{ flex: 1 - top10Share }}>其余</span>}

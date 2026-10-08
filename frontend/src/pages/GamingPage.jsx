@@ -92,15 +92,15 @@ export default function GamingPage() {
         ]}
       />
 
-      <div className="flex flex-wrap items-start gap-3">
-        <section className="min-w-0 flex-[999_1_560px] overflow-hidden rounded-[10px] border border-border bg-card">
+      <div className="flex flex-wrap items-start gap-4">
+        <section className="min-w-0 flex-[999_1_560px] overflow-hidden rounded-2xl border border-border bg-card">
           {games.isLoading ? <Skeleton className="m-4 h-64" /> : <GameList games={list} selectedId={current?.appid} onSelect={setSelected} />}
         </section>
-        <div className="flex-[1_1_320px] md:sticky md:top-[calc(var(--topbar-height)+16px)]">
+        <div className="flex-[1_1_320px] md:sticky md:top-8">
           {current ? (
             <GamePanel key={current.appid} game={current} onOpen={() => setDetailOpen(true)} />
           ) : (
-            !games.isLoading && <p className="rounded-[10px] border border-border bg-card px-4 py-8 text-center text-muted-foreground">同步后选择一款游戏查看详情。</p>
+            !games.isLoading && <p className="rounded-2xl border border-border bg-card px-5 py-10 text-center text-muted-foreground">同步后选择一款游戏查看详情。</p>
           )}
         </div>
       </div>

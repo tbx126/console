@@ -20,7 +20,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
         aria-label={typeof title === "string" ? title : undefined}
         className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-xl"
       >
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+        <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <h2 className="text-lg font-semibold">{title}</h2>
           <button
             type="button"

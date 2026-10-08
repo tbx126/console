@@ -10,18 +10,18 @@ const variants = {
 };
 
 const sizes = {
-  default: "h-8 px-3",
-  sm: "h-7 px-2.5 text-xs",
+  default: "h-9 px-3.5",
+  sm: "h-8 px-3 text-[13px]",
   lg: "h-10 px-5",
-  icon: "size-8",
+  icon: "size-9",
 };
 
 export function Button({ className, variant = "primary", size = "default", isLoading, children, ...props }) {
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-[7px] text-[13px] font-medium transition-colors",
-        "disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0",
+        "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[10px] text-sm font-medium transition-colors",
+        "disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
         variants[variant],
         sizes[size],
         className

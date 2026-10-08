@@ -32,7 +32,7 @@ export default function SettingsPage() {
               aria-current={id === active ? 'page' : undefined}
               onClick={() => setActive(id)}
               className={cn(
-                'flex h-8 items-center gap-2 rounded-[7px] px-2.5 text-left',
+                'flex h-8 items-center gap-2 rounded-[10px] px-2.5 text-left',
                 id === active ? 'bg-accent font-semibold text-accent-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
               )}
             >

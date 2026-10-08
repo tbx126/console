@@ -12,7 +12,22 @@ const navItems = [
 
 const settingsItem = { path: '/settings', label: '设置', icon: Settings2 };
 
-function ThemeButton({ className }) {
+const sideLink = ({ isActive }) =>
+  cn(
+    'flex h-10 items-center gap-3 rounded-[10px] px-3 text-[15px] font-medium transition-colors [&_svg]:size-5 [&_svg]:shrink-0',
+    isActive ? 'bg-accent font-semibold text-accent-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+  );
+
+function Brand() {
+  return (
+    <NavLink to="/" className="flex shrink-0 items-center gap-3 text-foreground">
+      <span className="grid size-9 place-items-center rounded-[10px] bg-[#555ce4] text-xs font-bold text-white">PLC</span>
+      <strong className="text-[17px] font-semibold">生活控制台</strong>
+    </NavLink>
+  );
+}
+
+function ThemeButton({ withLabel = false, className }) {
   const { theme, toggleTheme } = useTheme();
   const dark = theme === 'dark';
   const Icon = dark ? Sun : Moon;
@@ -21,61 +36,58 @@ function ThemeButton({ className }) {
     <button
       type="button"
       onClick={toggleTheme}
-      aria-label={label}
+      aria-label={withLabel ? undefined : label}
       title={label}
-      className={cn('grid size-8 place-items-center rounded-[7px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground', className)}
+      className={cn(
+        withLabel
+          ? 'flex h-10 w-full items-center gap-3 rounded-[10px] px-3 text-left text-[15px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-5'
+          : 'grid size-10 place-items-center rounded-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-5',
+        className,
+      )}
     >
-      <Icon className="size-4" aria-hidden="true" />
+      <Icon aria-hidden="true" />
+      {withLabel && (dark ? '浅色模式' : '深色模式')}
     </button>
   );
 }
 
 export default function AppShell({ children }) {
   return (
-    <div className="min-h-screen bg-background text-[13px] text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
-        <div className="mx-auto flex h-[var(--topbar-height)] max-w-[1280px] items-center gap-4 px-4 sm:px-5">
-          <NavLink to="/" className="flex shrink-0 items-center gap-2 text-foreground">
-            <span className="grid size-7 place-items-center rounded-lg bg-[#555ce4] text-[10px] font-bold text-white">PLC</span>
-            <strong className="text-sm font-semibold">生活控制台</strong>
-          </NavLink>
-          <nav aria-label="主导航" className="hidden min-w-0 flex-1 items-center gap-0.5 md:flex">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.end}
-                className={({ isActive }) =>
-                  cn(
-                    'inline-flex h-8 items-center rounded-[7px] px-2.5 text-[13px] font-medium transition-colors',
-                    isActive ? 'bg-accent font-semibold text-accent-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                  )
-                }
-              >
+    <div className="min-h-screen bg-background text-[15px] leading-normal text-foreground md:flex">
+      {/* 桌面：左侧栏 */}
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-6 border-r border-border bg-card px-4 py-6 md:flex">
+        <div className="px-2">
+          <Brand />
+        </div>
+        <nav aria-label="主导航" className="flex flex-col gap-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink key={item.path} to={item.path} end={item.end} className={sideLink}>
+                <Icon aria-hidden="true" />
                 {item.label}
               </NavLink>
-            ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-0.5">
-            <NavLink
-              to={settingsItem.path}
-              aria-label="设置"
-              title="设置"
-              className={({ isActive }) =>
-                cn(
-                  'hidden size-8 place-items-center rounded-[7px] transition-colors md:grid',
-                  isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                )
-              }
-            >
-              <Settings2 className="size-4" aria-hidden="true" />
-            </NavLink>
-            <ThemeButton />
-          </div>
+            );
+          })}
+        </nav>
+        <div className="mt-auto flex flex-col gap-1 border-t border-border pt-4">
+          <NavLink to={settingsItem.path} className={sideLink}>
+            <Settings2 aria-hidden="true" />
+            {settingsItem.label}
+          </NavLink>
+          <ThemeButton withLabel />
         </div>
-      </header>
+      </aside>
 
-      <main className="mx-auto max-w-[1280px] px-4 pb-24 pt-4 sm:px-5 md:pb-10">{children}</main>
+      <div className="min-w-0 flex-1">
+        {/* 手机：顶栏 */}
+        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-card/95 px-4 backdrop-blur md:hidden">
+          <Brand />
+          <ThemeButton />
+        </header>
+
+        <main className="px-4 pb-28 pt-5 sm:px-6 md:px-[clamp(20px,2.5vw,40px)] md:pb-12 md:pt-6">{children}</main>
+      </div>
 
       {/* 手机：底部标签栏 */}
       <nav
@@ -91,12 +103,12 @@ export default function AppShell({ children }) {
               end={item.end}
               className={({ isActive }) =>
                 cn(
-                  'flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 text-[11px]',
+                  'flex min-h-14 flex-1 flex-col items-center justify-center gap-1 text-xs',
                   isActive ? 'font-semibold text-accent-foreground' : 'text-muted-foreground',
                 )
               }
             >
-              <Icon className="size-[18px]" aria-hidden="true" />
+              <Icon className="size-5" aria-hidden="true" />
               {item.label}
             </NavLink>
           );

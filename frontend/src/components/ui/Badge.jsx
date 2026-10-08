@@ -12,7 +12,7 @@ const variants = {
 export function Badge({ className, variant = "default", children, ...props }) {
   return (
     <span
-      className={cn("inline-flex items-center rounded-[5px] px-2 py-0.5 text-xs font-medium", variants[variant], className)}
+      className={cn("inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium", variants[variant], className)}
       {...props}
     >
       {children}

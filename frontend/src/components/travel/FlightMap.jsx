@@ -85,7 +85,7 @@ const InfoPanel = ({ mousePosition, selectedAirport, selectedRoute, mapData }) =
   return (
     <div className="w-72 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="px-4 py-3 bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-700">
+      <div className="px-5 py-3 bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-700">
         <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
           <Info className="h-4 w-4 text-violet-500 dark:text-violet-400" />
           地图信息
@@ -93,7 +93,7 @@ const InfoPanel = ({ mousePosition, selectedAirport, selectedRoute, mapData }) =
       </div>
 
       {/* Mouse Position */}
-      <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700">
+      <div className="px-5 py-3 border-b border-zinc-200 dark:border-zinc-700">
         <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 mb-2">
           <Navigation className="h-3 w-3" />
           <span>光标位置</span>

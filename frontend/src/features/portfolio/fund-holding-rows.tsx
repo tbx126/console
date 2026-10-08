@@ -15,8 +15,7 @@ export default function FundHoldingRows({ rows, currency, search, demo, asOf, pe
   function fundRow(r: ValuedAsset, group?: FundGroup, open = true) {
     const a = r.asset;
     return <TableRow key={a.id} id={group ? `fund-holdings-${group}-${a.id}` : undefined} hidden={!open} className={group ? "fund-child-row" : undefined}>
-      <TableCell><div className="asset-name"><AssetIcon asset={a}/><div><strong>{a.name}</strong><small>{"symbol" in a && a.symbol ? a.symbol : "QDII · 手动人民币市值"}</small></div></div></TableCell>
-      <TableCell className="numeric">{quantity(a)}</TableCell>
+      <TableCell><div className="asset-name"><AssetIcon asset={a}/><div><strong>{a.name}</strong><small>{"symbol" in a && a.symbol ? `${a.symbol} · ${quantity(a)}` : "QDII · 手动人民币市值"}</small></div></div></TableCell>
       <TableCell className="numeric">{money(r.native, "CNY")}<span className="quote-note">{demo ? "示例" : "手动"} · {new Intl.DateTimeFormat("zh-CN", { timeZone: "Asia/Singapore", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(a.updatedAt ?? asOf))}</span></TableCell>
       <TableCell className="numeric value-cell">{money(r.value, currency)}{r.value === null && <span className="quote-note">缺少汇率</span>}</TableCell>
       <TableCell className="numeric">{r.value === null ? "—" : `${percent(r.value).toFixed(1)}%`}</TableCell>
@@ -36,9 +35,8 @@ export default function FundHoldingRows({ rows, currency, search, demo, asOf, pe
     return <Fragment key={group}>
       <TableRow className="fund-parent-row">
         <TableCell><button className="fund-row-toggle" aria-expanded={open} aria-controls={items.map(r => `${childrenId}-${r.asset.id}`).join(" ")} onClick={() => setExpanded(previous => ({ ...previous, [group]: !open }))}>
-          <AssetIcon asset={{category:"fund",name:fundGroups[group]}} group={group}/><span><strong>{fundGroups[group]}</strong><small>{items.length} 只基金{term && term !== fundGroups[group] ? " · 搜索结果" : ""}</small></span>{open ? <ChevronDown size={16}/> : <ChevronRight size={16}/>}
+          <AssetIcon asset={{category:"fund",name:fundGroups[group]}} group={group}/><span><strong>{fundGroups[group]}</strong><small>{items.length} 只基金 · 份额不合并{term && term !== fundGroups[group] ? " · 搜索结果" : ""}</small></span>{open ? <ChevronDown size={16}/> : <ChevronRight size={16}/>}
         </button></TableCell>
-        <TableCell className="numeric">—<span className="quote-note">份额不合并</span></TableCell>
         <TableCell className="numeric">{money(native, "CNY")}</TableCell>
         <TableCell className="numeric value-cell">{money(value, currency)}{missing > 0 && <span className="quote-note">{missing} 项缺少汇率</span>}</TableCell>
         <TableCell className="numeric">{value === null ? "—" : `${percent(value).toFixed(1)}%`}</TableCell><TableCell/>

@@ -43,11 +43,11 @@ export default function GameList({ games, selectedId, onSelect }) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
-        <label className="flex h-8 max-w-[300px] flex-[1_1_200px] items-center gap-1.5 rounded-[7px] border border-input bg-card px-2 text-muted-foreground focus-within:border-ring">
+      <div className="flex flex-wrap items-center gap-2 px-5 py-2.5">
+        <label className="flex h-9 max-w-[300px] flex-[1_1_200px] items-center gap-1.5 rounded-[10px] border border-input bg-card px-2 text-muted-foreground focus-within:border-ring">
           <Search className="size-3.5" aria-hidden="true" />
           <span className="sr-only">搜索游戏</span>
-          <input value={query} onChange={(e) => { setQuery(e.target.value); setLimit(PAGE); }} placeholder="搜索游戏" className="w-full min-w-0 bg-transparent text-[13px] text-foreground outline-none" />
+          <input value={query} onChange={(e) => { setQuery(e.target.value); setLimit(PAGE); }} placeholder="搜索游戏" className="w-full min-w-0 bg-transparent text-[15px] text-foreground outline-none" />
         </label>
         <label className="sr-only" htmlFor="game-sort">排序</label>
         <Select id="game-sort" value={sort} onChange={(e) => setSort(e.target.value)} className="w-auto">
@@ -56,7 +56,7 @@ export default function GameList({ games, selectedId, onSelect }) {
         <span className="ml-auto text-xs text-muted-foreground">{shown.length} 款</span>
       </div>
       {shown.length ? (
-        <ul className="m-0 list-none p-0">
+        <ul className="m-0 grid list-none gap-x-4 border-t border-border px-2 py-1" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 380px), 1fr))' }}>
           {shown.slice(0, limit).map((game) => (
             <li key={game.appid}>
               <button
@@ -64,7 +64,7 @@ export default function GameList({ games, selectedId, onSelect }) {
                 aria-pressed={game.appid === selectedId}
                 onClick={() => onSelect(game)}
                 className={cn(
-                  'flex w-full items-center gap-2.5 border-t border-border py-1.5 pl-4 pr-3 text-left',
+                  'flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-left',
                   game.appid === selectedId ? 'bg-accent' : 'hover:bg-muted/60',
                 )}
               >
@@ -87,12 +87,12 @@ export default function GameList({ games, selectedId, onSelect }) {
           ))}
         </ul>
       ) : (
-        <p className="border-t border-border px-4 py-8 text-center text-muted-foreground">
+        <p className="border-t border-border px-5 py-10 text-center text-muted-foreground">
           {games.length ? '没有匹配的游戏。' : '没有找到游戏。点击“同步”从 Steam 获取。'}
         </p>
       )}
       {limit < shown.length && (
-        <div className="border-t border-border px-4 py-2 text-right">
+        <div className="border-t border-border px-5 py-2.5 text-right">
           <button type="button" onClick={() => setLimit((n) => n + PAGE)} className="text-xs font-medium text-accent-foreground hover:underline">加载更多</button>
         </div>
       )}

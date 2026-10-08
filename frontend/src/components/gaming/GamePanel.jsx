@@ -18,7 +18,7 @@ export default function GamePanel({ game, onOpen }) {
   const d = details.data;
 
   return (
-    <aside aria-label="游戏详情" className="min-w-0 overflow-hidden rounded-[10px] border border-border bg-card">
+    <aside aria-label="游戏详情" className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card">
       {imgFailed ? (
         <div className="aspect-[460/215] w-full bg-muted" />
       ) : (
@@ -29,7 +29,7 @@ export default function GamePanel({ game, onOpen }) {
           className="aspect-[460/215] w-full object-cover"
         />
       )}
-      <div className="flex flex-col gap-3 px-4 py-3">
+      <div className="flex flex-col gap-3 px-5 py-3">
         <div>
           <strong className="block text-[15px] font-semibold">{game.name}</strong>
           {details.isLoading ? (

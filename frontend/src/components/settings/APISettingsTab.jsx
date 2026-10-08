@@ -38,10 +38,10 @@ function KeyRow({ field, configured, value, onChange }) {
   const [visible, setVisible] = useState(false);
   const id = `api-${field.key}`;
   return (
-    <div className="grid items-center gap-x-3 gap-y-1 border-t border-border px-4 py-2 sm:grid-cols-[160px_minmax(0,1fr)_64px]">
+    <div className="grid items-center gap-x-3 gap-y-1 border-t border-border px-4 py-2.5 sm:grid-cols-[140px_minmax(0,1fr)_56px]">
       <label htmlFor={id} className="flex items-center gap-1.5">
         {field.label}
-        {field.recommended && <span className="rounded bg-muted px-1 text-[11px] text-muted-foreground">推荐</span>}
+        {field.recommended && <span className="rounded bg-muted px-1 text-xs text-muted-foreground">推荐</span>}
       </label>
       <div className="relative">
         <Input
@@ -64,7 +64,7 @@ function KeyRow({ field, configured, value, onChange }) {
           </button>
         )}
       </div>
-      <span className={`justify-self-start rounded px-1.5 py-px text-[11px] ${configured ? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300' : 'text-muted-foreground'}`}>
+      <span className={`justify-self-start rounded px-1.5 py-px text-xs ${configured ? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300' : 'text-muted-foreground'}`}>
         {configured ? '已配置' : '—'}
       </span>
     </div>
@@ -91,13 +91,14 @@ export default function APISettingsTab() {
   };
 
   if (isLoading) return <Skeleton className="m-4 h-40" />;
-  if (error) return <p className="px-4 py-6 text-muted-foreground">API 密钥加载失败。</p>;
+  if (error) return <p className="px-5 py-8 text-muted-foreground">API 密钥加载失败。</p>;
 
   return (
     <div>
+      <div className="grid gap-3 px-5 pb-4 pt-1 xl:grid-cols-2">
       {API_GROUPS.map((group) => (
-        <div key={group.id}>
-          <div className="border-t border-border bg-muted px-4 py-1 text-xs text-muted-foreground first:border-t-0">{group.label}</div>
+        <div key={group.id} className="overflow-hidden rounded-xl border border-border">
+          <div className="bg-muted px-4 py-2 text-xs font-medium text-muted-foreground">{group.label}</div>
           {group.fields.map((field) => (
             <KeyRow
               key={field.key}
@@ -109,7 +110,8 @@ export default function APISettingsTab() {
           ))}
         </div>
       ))}
-      <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-2.5">
+      </div>
+      <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-2.5">
         {dirty && <span className="text-xs text-muted-foreground">有未保存的修改</span>}
         <Button onClick={save} disabled={!dirty} isLoading={saving}>保存</Button>
       </div>
