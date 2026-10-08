@@ -1,15 +1,17 @@
-import api, { cachedGet } from './api';
+import { get, send } from './api';
+
+const LONG = 10 * 60_000;
 
 const gamingApi = {
-  getGames: () => cachedGet('/gaming/games'),
-  getGame: (appid) => cachedGet(`/gaming/games/${appid}`),
-  getGameDetails: (appid) => cachedGet(`/gaming/games/${appid}/details`),
-  getGameAchievements: (appid) => cachedGet(`/gaming/games/${appid}/achievements`),
-  getDetailedAchievements: (appid) => cachedGet(`/gaming/games/${appid}/achievements-detailed`),
-  getGameNews: (appid, count = 10) => cachedGet(`/gaming/games/${appid}/news`, { params: { count } }),
-  getStatistics: () => cachedGet('/gaming/statistics'),
-  syncGames: () => api.post('/gaming/sync'),
-  getCacheSyncStatus: () => api.get('/gaming/cache/sync-status'),
+  getGames: () => get('/gaming/games', { ttl: LONG }),
+  getGame: (appid) => get(`/gaming/games/${appid}`, { ttl: LONG }),
+  getGameDetails: (appid) => get(`/gaming/games/${appid}/details`, { ttl: LONG }),
+  getGameAchievements: (appid) => get(`/gaming/games/${appid}/achievements`, { ttl: LONG }),
+  getDetailedAchievements: (appid) => get(`/gaming/games/${appid}/achievements-detailed`, { ttl: LONG }),
+  getGameNews: (appid, count = 10) => get(`/gaming/games/${appid}/news`, { params: { count }, ttl: LONG }),
+  getStatistics: () => get('/gaming/statistics', { ttl: LONG }),
+  syncGames: () => send('post', '/gaming/sync'),
+  getCacheSyncStatus: () => get('/gaming/cache/sync-status', { ttl: 0, force: true }),
 };
 
 export default gamingApi;

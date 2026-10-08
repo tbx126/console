@@ -1,4 +1,11 @@
 import apiClient from './api';
+import { invalidate } from '../lib/query';
+
+// 恢复与导入会替换任意模块的数据：之后让所有前端缓存失效。
+const afterRestore = (data) => {
+  invalidate();
+  return data;
+};
 
 const dataApi = {
   // Snapshots
@@ -14,7 +21,7 @@ const dataApi = {
 
   restoreSnapshot: async (backupFilename) => {
     const response = await apiClient.post(`/data/snapshots/${backupFilename}/restore`);
-    return response.data;
+    return afterRestore(response.data);
   },
 
   deleteSnapshot: async (backupFilename) => {
@@ -47,7 +54,7 @@ const dataApi = {
 
   restoreArchive: async (archiveId) => {
     const response = await apiClient.post(`/data/archives/${archiveId}/restore`);
-    return response.data;
+    return afterRestore(response.data);
   },
 
   deleteArchive: async (archiveId) => {
@@ -61,7 +68,7 @@ const dataApi = {
     const response = await apiClient.post('/data/archives/import', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
-    return response.data;
+    return afterRestore(response.data);
   },
 };
 

@@ -1,4 +1,4 @@
-import { currencies, keyOf, valueAsset, snapshotSchema, type Portfolio, type Quote, type Fx, type Snapshot } from "./portfolio";
+import { categories, currencies, keyOf, valueAsset, snapshotSchema, type Portfolio, type Quote, type Fx, type Snapshot } from "./portfolio";
 
 // Capture only complete valuations, using exchange rates available at capture time.
 export function captureSnapshot(p: Portfolio, quotes: Record<string, Quote>, fx: Fx | null, now = Date.now()): Snapshot | null {
@@ -14,7 +14,9 @@ export function captureSnapshot(p: Portfolio, quotes: Record<string, Quote>, fx:
     const key = keyOf(a), q = key ? quotes[key] : null;
     return !!q && (!!q.stale || now - q.fetchedAt > 300000);
   });
-  const result = snapshotSchema.safeParse({ at: new Date(now).toISOString(), totals, cached });
+  // Per-category SGD values feed the composition-over-time chart.
+  const categoryTotals = Object.fromEntries(categories.map(c => [c, p.assets.filter(a => a.category === c).reduce((sum, a) => sum + (valueAsset(a, "SGD", quotes, fx).value ?? 0), 0)]));
+  const result = snapshotSchema.safeParse({ at: new Date(now).toISOString(), totals, cached, categories: categoryTotals });
   return result.success ? result.data : null;
 }
 

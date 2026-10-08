@@ -8,7 +8,6 @@ import Dashboard from './pages/Dashboard';
 const TravelPage = lazy(() => import('./pages/TravelPage'));
 const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
-const AIAssistantPage = lazy(() => import('./pages/AIAssistantPage'));
 const GamingPage = lazy(() => import('./pages/GamingPage'));
 
 function PageLoader() {
@@ -27,9 +26,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/travel" element={<TravelPage />} />
-            <Route path="/portfolio" element={<PortfolioPage />} />
+            <Route path="/portfolio/:view?" element={<PortfolioPage />} />
             <Route path="/gaming" element={<GamingPage />} />
-            <Route path="/ai-assistant" element={<AIAssistantPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

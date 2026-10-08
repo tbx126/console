@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import List, Dict, Any
 from app.models.travel import Flight, AirlineStats, Achievement, TravelStatistics
 from app.services.travel_service import travel_service
+from app.services.cache_service import FLIGHT_LOOKUP
 from app.services.flight_lookup_service import flight_lookup_service
 from app.services.airport_data_service import airport_data_service
 from app.services.data_manager import data_manager
@@ -91,8 +92,12 @@ async def lookup_flight(
         aviationstack_key=api_keys.get("aviationstack_key")
     )
 
-    result = await flight_lookup_service.lookup_flight(flight_number, date)
-    return result
+    # Successful lookups are stable; misses are retried after a few minutes.
+    return await FLIGHT_LOOKUP.get_or_fetch(
+        f"{flight_number.strip().upper()}:{date}",
+        lambda: flight_lookup_service.lookup_flight(flight_number, date),
+        ttl_for=lambda result: FLIGHT_LOOKUP.spec.ttl if result.get("success") else 5 * 60,
+    )
 
 
 @router.get("/map-data")

@@ -109,10 +109,21 @@ class Totals(_Model):
     HKD: Finite
 
 
+class CategoryTotals(_Model):
+    """Per-category value in SGD at the time of the snapshot."""
+
+    cash: Finite
+    stock: Finite
+    fund: Finite
+    gold: Finite
+    crypto: Finite
+
+
 class Snapshot(_Model):
     at: IsoDateTime
     totals: Totals
     cached: Annotated[bool, Field(strict=True)]
+    categories: Optional[CategoryTotals] = None
 
     @field_validator("at")
     @classmethod

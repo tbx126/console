@@ -6,13 +6,12 @@ currencies are returned; no account data is read.
 """
 import asyncio
 import re
-import time
-from collections import OrderedDict
 from typing import Any, Awaitable, Callable, Dict, List
 from urllib.parse import quote
 
 import httpx
 
+from app.services.cache_service import SEARCH, CacheNamespace
 from app.services.market_service import MarketError, fetch_json
 
 SYMBOL = re.compile(r"^[A-Z0-9][A-Z0-9.^=-]{0,23}$")
@@ -125,19 +124,21 @@ def parse_funds(data: Any) -> List[dict]:
 
 
 class InstrumentSearch:
-    def __init__(self, max_entries: int = 200):
-        self._cache: "OrderedDict[str, tuple[dict, float]]" = OrderedDict()
-        self._max_entries = max_entries
+    def __init__(self, cache: CacheNamespace = SEARCH):
+        self._cache = cache
         self.fetch_json: Callable[[str], Awaitable[Any]] = lambda url: fetch_json(url, timeout=5.5)
 
     async def search(self, category: str, query: str) -> dict:
-        key = f"{category}:{query.lower()}"
-        stored = self._cache.get(key)
-        if stored and stored[1] > time.monotonic():
-            return stored[0]
         local = local_instruments(category, query)
         if category in ("cash", "gold") or (not query and category != "fund"):
             return {"items": local, "partial": False}
+        return await self._cache.get_or_fetch(
+            f"{category}:{query.lower()}",
+            lambda: self._search_remote(category, query, local),
+            ttl_for=lambda result: 10 if result["partial"] else 60,
+        )
+
+    async def _search_remote(self, category: str, query: str, local: List[dict]) -> dict:
         jobs: List[Awaitable[List[dict]]] = []
 
         async def run(url: str, parse: Callable[[Any], List[dict]]) -> List[dict]:
@@ -161,12 +162,7 @@ class InstrumentSearch:
             if isinstance(r, BaseException) and not isinstance(r, failures):
                 raise r
         partial = any(isinstance(r, BaseException) for r in results)
-        result = {"items": merge_instruments(local, *[r for r in results if not isinstance(r, BaseException)]), "partial": partial}
-        self._cache[key] = (result, time.monotonic() + (10 if partial else 60))
-        self._cache.move_to_end(key)
-        while len(self._cache) > self._max_entries:
-            self._cache.popitem(last=False)
-        return result
+        return {"items": merge_instruments(local, *[r for r in results if not isinstance(r, BaseException)]), "partial": partial}
 
 
 instrument_search = InstrumentSearch()

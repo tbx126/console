@@ -1,183 +1,70 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Trash2, Edit } from 'lucide-react';
-import travelApi from '../../services/travelApi';
-import { isWithinDateRange } from '../../lib/dateFilters';
+import { useState } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 
-const AirlineLogo = ({ airlineCode, airlineName }) => {
-  const [imgError, setImgError] = useState(false);
-  const initials = (airlineName || 'XX').substring(0, 2).toUpperCase();
+const CLASS_LABELS = { economy: '经济', premium_economy: '优选经济', business: '公务', first: '头等' };
+const number = new Intl.NumberFormat('zh-CN');
 
-  if (imgError || !airlineCode) {
+function AirlineLogo({ code, name }) {
+  const [failed, setFailed] = useState(false);
+  if (failed || !code) {
     return (
-      <div className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-xs font-bold text-violet-700 dark:text-violet-300">
-        {initials}
-      </div>
+      <span className="grid size-6 shrink-0 place-items-center rounded-md bg-muted text-[10px] font-bold text-muted-foreground">
+        {(name || '??').slice(0, 2).toUpperCase()}
+      </span>
     );
   }
+  return <img src={`https://pics.avs.io/48/48/${code}.png`} alt="" className="size-6 shrink-0 object-contain" loading="lazy" onError={() => setFailed(true)} />;
+}
 
+/** 紧凑航班表格：一行一段航班 */
+export default function FlightList({ flights, onEdit, onDelete }) {
   return (
-    <img
-      src={`https://pics.avs.io/60/60/${airlineCode}.png`}
-      alt={airlineName}
-      className="w-8 h-8 object-contain"
-      onError={() => setImgError(true)}
-    />
-  );
-};
-
-const FlightList = ({ refresh, filters, searchQuery, sortBy, viewMode, onEdit, onAirlinesLoaded }) => {
-  const [flights, setFlights] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const loadFlights = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const data = await travelApi.getFlights();
-      setFlights(data);
-
-      if (onAirlinesLoaded) {
-        const airlines = [...new Set(data.map((flight) => flight.airline).filter(Boolean))];
-        onAirlinesLoaded(airlines);
-      }
-    } catch {
-      setError('航班加载失败');
-    } finally {
-      setLoading(false);
-    }
-  }, [onAirlinesLoaded]);
-
-  useEffect(() => {
-    void loadFlights();
-  }, [loadFlights, refresh]);
-
-  const handleDelete = async (id) => {
-    if (!confirm('确定删除这条航班记录吗？')) return;
-
-    try {
-      await travelApi.deleteFlight(id);
-      await loadFlights();
-    } catch {
-      alert('删除航班失败');
-    }
-  };
-
-  const processedFlights = useMemo(() => {
-    let result = [...flights];
-
-    if (filters?.airlines?.length > 0) {
-      result = result.filter((flight) => filters.airlines.includes(flight.airline));
-    }
-
-    if (filters?.dateRange) {
-      result = result.filter((flight) => isWithinDateRange(flight.date, filters.dateRange));
-    }
-
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter((flight) =>
-        flight.airline?.toLowerCase().includes(query) ||
-        flight.origin?.toLowerCase().includes(query) ||
-        flight.destination?.toLowerCase().includes(query) ||
-        flight.flight_number?.toLowerCase().includes(query)
-      );
-    }
-
-    result.sort((left, right) => {
-      switch (sortBy) {
-        case 'date-desc':
-          return new Date(right.date) - new Date(left.date);
-        case 'date-asc':
-          return new Date(left.date) - new Date(right.date);
-        case 'airline-asc':
-          return (left.airline || '').localeCompare(right.airline || '');
-        case 'airline-desc':
-          return (right.airline || '').localeCompare(left.airline || '');
-        default:
-          return 0;
-      }
-    });
-
-    return result;
-  }, [flights, filters, searchQuery, sortBy]);
-
-  if (loading) {
-    return <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">Loading flights...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center py-8 text-red-600 dark:text-red-400">{error}</div>;
-  }
-
-  if (processedFlights.length === 0) {
-    return (
-      <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
-        没有符合条件的航班，请调整筛选条件。
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6">
-      <div className={viewMode === 'list' ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3'}>
-        {processedFlights.map((flight) => (
-          <div
-            key={flight.id}
-            className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <AirlineLogo airlineCode={flight.airline_code} airlineName={flight.airline} />
-                <span className="font-medium text-sm text-zinc-900 dark:text-zinc-100 truncate max-w-[100px]">
-                  {flight.airline}
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-[13px]">
+        <thead>
+          <tr className="bg-muted text-left text-xs text-muted-foreground">
+            <th className="h-8 whitespace-nowrap py-0 pl-4 pr-2.5 font-normal">日期</th>
+            <th className="whitespace-nowrap px-2.5 font-normal">航班</th>
+            <th className="whitespace-nowrap px-2.5 font-normal">航司</th>
+            <th className="whitespace-nowrap px-2.5 font-normal">航线</th>
+            <th className="whitespace-nowrap px-2.5 font-normal">舱位</th>
+            <th className="whitespace-nowrap px-2.5 text-right font-normal">距离</th>
+            <th className="whitespace-nowrap px-2.5 text-right font-normal">花费</th>
+            <th className="w-16 pr-3"><span className="sr-only">操作</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {flights.map((flight) => (
+            <tr key={flight.id} className="group border-t border-border hover:bg-muted/50">
+              <td className="tabular whitespace-nowrap py-1.5 pl-4 pr-2.5 text-muted-foreground">{flight.date?.slice(0, 10)}</td>
+              <td className="tabular whitespace-nowrap px-2.5 font-semibold">{flight.flight_number}</td>
+              <td className="px-2.5">
+                <span className="flex min-w-0 items-center gap-2">
+                  <AirlineLogo code={flight.airline_code} name={flight.airline} />
+                  <span className="max-w-[160px] truncate">{flight.airline}</span>
                 </span>
-              </div>
-              {flight.cost && (
-                <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                  ${flight.cost.toFixed(2)}
-                </div>
-              )}
-            </div>
-
-            <div className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm mb-1 truncate">
-              {flight.flight_number}
-            </div>
-            <div className="text-xs text-zinc-600 dark:text-zinc-400 mb-2">
-              {flight.origin} -&gt; {flight.destination}
-            </div>
-
-            {flight.notes && (
-              <div className="text-xs text-zinc-500 dark:text-zinc-400 italic mb-2 truncate" title={flight.notes}>
-                {flight.notes}
-              </div>
-            )}
-
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-zinc-500 dark:text-zinc-400">{new Date(flight.date).toLocaleDateString()}</span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => onEdit?.(flight)}
-                  className="text-zinc-400 hover:text-violet-600 transition-colors"
-                  title="编辑" aria-label="编辑"
-                >
-                  <Edit className="h-3.5 w-3.5" />
+              </td>
+              <td className="whitespace-nowrap px-2.5">
+                {flight.origin} → {flight.destination}
+                {flight.notes && <span className="ml-2 max-w-[200px] truncate align-bottom text-xs text-muted-foreground" title={flight.notes}>· {flight.notes}</span>}
+              </td>
+              <td className="px-2.5">
+                <span className="rounded bg-muted px-1.5 py-px text-[11px] text-muted-foreground">{CLASS_LABELS[flight.travel_class] || flight.travel_class}</span>
+              </td>
+              <td className="tabular whitespace-nowrap px-2.5 text-right">{flight.distance ? `${number.format(Math.round(flight.distance))} km` : '—'}</td>
+              <td className="tabular whitespace-nowrap px-2.5 text-right">{flight.cost != null ? `$${number.format(flight.cost)}` : '—'}</td>
+              <td className="whitespace-nowrap pr-3 text-right">
+                <button type="button" onClick={() => onEdit(flight)} aria-label={`编辑 ${flight.flight_number}`} className="inline-grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+                  <Pencil className="size-3.5" />
                 </button>
-                <button
-                  onClick={() => handleDelete(flight.id)}
-                  className="text-zinc-400 hover:text-red-600 transition-colors"
-                  title="删除" aria-label="删除"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
+                <button type="button" onClick={() => onDelete(flight)} aria-label={`删除 ${flight.flight_number}`} className="inline-grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive">
+                  <Trash2 className="size-3.5" />
                 </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
-};
-
-export default FlightList;
+}

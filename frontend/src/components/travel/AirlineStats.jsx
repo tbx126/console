@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Trophy, Plane, MapPin, Globe, Building, Route } from 'lucide-react';
-import travelApi from '../../services/travelApi';
+import { useApi } from '../../services/api';
 
 // 成就分类配置
 const CATEGORY_CONFIG = {
@@ -13,28 +13,11 @@ const CATEGORY_CONFIG = {
 };
 
 const AirlineStats = () => {
-  const [airlines, setAirlines] = useState([]);
-  const [achievements, setAchievements] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      const [airlinesData, achievementsData] = await Promise.all([
-        travelApi.getAirlineStats(),
-        travelApi.getAchievements()
-      ]);
-      setAirlines(airlinesData);
-      setAchievements(achievementsData);
-    } catch (err) {
-      console.error('Failed to load travel data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const airlinesQuery = useApi('/travel/airlines');
+  const achievementsQuery = useApi('/travel/achievements');
+  const airlines = useMemo(() => airlinesQuery.data ?? [], [airlinesQuery.data]);
+  const achievements = useMemo(() => achievementsQuery.data ?? [], [achievementsQuery.data]);
+  const loading = airlinesQuery.isLoading || achievementsQuery.isLoading;
 
   // 按类别分组成就
   const groupedAchievements = useMemo(() => {
@@ -48,11 +31,11 @@ const AirlineStats = () => {
   }, [achievements]);
 
   if (loading) {
-    return <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">Loading statistics...</div>;
+    return <div className="text-center py-8 text-muted-foreground">加载中…</div>;
   }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-4 space-y-5">
       {/* Achievements by Category */}
       {achievements.length > 0 && (
         <div className="space-y-6">

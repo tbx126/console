@@ -1,9 +1,9 @@
 import { cn } from "../../lib/utils";
 
-/** 统一的筛选/分页签样式（与资产页的类别筛选一致） */
-export function SegmentedTabs({ tabs, value, onChange, label, className }) {
+/** 分段切换（视图、时间范围、筛选），与资产页类别筛选一致 */
+export function SegmentedTabs({ tabs, value, onChange, label, className, size = "md" }) {
   return (
-    <div role="tablist" aria-label={label} className={cn("flex flex-wrap gap-1.5", className)}>
+    <div role="tablist" aria-label={label} className={cn("inline-flex flex-wrap gap-0.5 rounded-lg bg-muted p-0.5", className)}>
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const active = tab.id === value;
@@ -16,12 +16,13 @@ export function SegmentedTabs({ tabs, value, onChange, label, className }) {
             disabled={tab.disabled}
             onClick={() => !tab.disabled && onChange(tab.id)}
             className={cn(
-              "inline-flex min-h-9 items-center gap-2 rounded-[7px] px-3.5 text-sm transition-colors",
-              active ? "bg-accent font-semibold text-accent-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              tab.disabled && "cursor-not-allowed opacity-50 hover:bg-transparent",
+              "inline-flex items-center gap-1.5 rounded-md px-2.5 transition-colors",
+              size === "sm" ? "h-6 text-xs" : "h-7 text-[13px]",
+              active ? "bg-card font-semibold text-accent-foreground shadow-[0_1px_2px_rgb(0_0_0/0.06)]" : "text-muted-foreground hover:text-foreground",
+              tab.disabled && "cursor-not-allowed opacity-50",
             )}
           >
-            {Icon && <Icon className="size-4" aria-hidden="true" />}
+            {Icon && <Icon className="size-3.5" aria-hidden="true" />}
             {tab.label}
           </button>
         );

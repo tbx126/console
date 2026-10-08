@@ -88,27 +88,28 @@ async def root():
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint."""
+    from app.services.cache_service import cache_service
     from app.services.gaming_cache_service import gaming_cache_service
-    from app.services.market_service import market_service
 
     return {
         "status": "healthy",
         "cache": {
             "data": data_manager.cache_info(),
             "gaming": gaming_cache_service.cache_info(),
-            "market": market_service.cache_info(),
+            "namespaces": cache_service.info(),
         },
     }
 
 
 # Import and include routers
-from app.routers import travel, portfolio, ai_assistant, config, gaming, data_management
+from app.routers import travel, portfolio, config, gaming, data_management, cache, milestones
 app.include_router(travel.router, prefix="/api/travel", tags=["travel"])
 app.include_router(portfolio.router, prefix="/api/portfolio", tags=["portfolio"])
-app.include_router(ai_assistant.router, prefix="/api/ai", tags=["ai"])
 app.include_router(config.router, prefix="/api/config", tags=["config"])
 app.include_router(gaming.router, prefix="/api/gaming", tags=["gaming"])
 app.include_router(data_management.router, prefix="/api/data", tags=["data"])
+app.include_router(cache.router, prefix="/api/cache", tags=["cache"])
+app.include_router(milestones.router, prefix="/api/milestones", tags=["milestones"])
 
 # Mount static files for gaming cache
 cache_dir = Path(__file__).parent.parent / "data" / "gaming_cache"
