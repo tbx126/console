@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./styles/shadcn-tailwind-4.13.0.css";
-@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -30,8 +29,16 @@
   --input: #e3e6ef;
   --ring: #777bea;
   --destructive: #c84444;
-  --radius: 0.75rem;
-  --sidebar-width: 232px;
+  --radius: 0.625rem;
+  --topbar-height: 48px;
+  /* 资产类别（顺序：股票、基金、现金、黄金、加密货币；已通过色盲与对比度检查） */
+  --cat-stock: #555ce4;
+  --cat-fund: #eb6834;
+  --cat-cash: #1baf7a;
+  --cat-gold: #eda100;
+  --cat-crypto: #e87ba4;
+  --chart-area: color-mix(in srgb, var(--cat-stock) 12%, transparent);
+  --chart-grid: #eceef5;
 }
 
 .dark {
@@ -53,6 +60,13 @@
   --input: #384056;
   --ring: #8c91ff;
   --destructive: #e06a6a;
+  --cat-stock: #6f75ec;
+  --cat-fund: #d95926;
+  --cat-cash: #199e70;
+  --cat-gold: #c98500;
+  --cat-crypto: #d55181;
+  --chart-area: color-mix(in srgb, var(--cat-stock) 18%, transparent);
+  --chart-grid: #262c3d;
 }
 
 @theme inline {
@@ -178,8 +192,16 @@
     border-color: var(--color-border);
   }
 
+  /* 紧凑密度：桌面端以 14px 为基准缩放所有 rem 尺寸；触屏设备保留 16px 以保证触控目标 */
   html {
     -webkit-text-size-adjust: 100%;
+    font-size: 14px;
+  }
+
+  @media (pointer: coarse) {
+    html {
+      font-size: 16px;
+    }
   }
 
   body {
@@ -204,30 +226,23 @@
 /* 统一页面结构：页面头部 / 区块卡片 */
 @layer components {
   .page {
-    max-width: 1240px;
+    max-width: 1280px;
     margin: 0 auto;
-  }
-
-  .page-eyebrow {
-    font-size: 12px;
-    letter-spacing: 0.14em;
-    font-weight: 600;
-    color: var(--muted-foreground);
-    margin-bottom: 8px;
-    text-transform: uppercase;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .page-title {
-    font-size: 30px;
+    font-size: 20px;
     line-height: 1.2;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.02em;
     font-weight: 650;
     margin: 0;
   }
 
-  .page-subtitle {
-    margin: 7px 0 0;
-    font-size: 14px;
+  .page-meta {
+    font-size: 12px;
     color: var(--muted-foreground);
   }
 
@@ -258,65 +273,4 @@
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
-}
-
-/* Markdown 深色模式增强 */
-.dark .prose {
-  --tw-prose-body: var(--color-slate-300);
-  --tw-prose-headings: var(--color-slate-100);
-  --tw-prose-links: var(--color-violet-400);
-  --tw-prose-bold: var(--color-slate-100);
-  --tw-prose-quotes: var(--color-slate-400);
-  --tw-prose-code: var(--color-violet-300);
-}
-
-/* 移除 prose 中 pre 的默认背景 */
-.prose pre {
-  background: transparent !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* 代码块滚动条样式 */
-.prose pre::-webkit-scrollbar {
-  height: 6px;
-}
-.prose pre::-webkit-scrollbar-track {
-  background: transparent;
-}
-.prose pre::-webkit-scrollbar-thumb {
-  background: var(--color-zinc-600);
-  border-radius: 3px;
-}
-.prose pre::-webkit-scrollbar-thumb:hover {
-  background: var(--color-zinc-500);
-}
-
-/* KaTeX 数学公式样式增强 */
-.katex {
-  font-size: 1.1em;
-}
-
-/* 块级公式居中显示 */
-.katex-display {
-  margin: 1rem 0;
-  padding: 0.75rem 1rem;
-  background: var(--color-slate-50);
-  border-radius: 0.5rem;
-  overflow-x: auto;
-}
-
-.dark .katex-display {
-  background: var(--color-slate-800);
-}
-
-/* 行内公式样式 */
-.katex-inline {
-  padding: 0 0.2em;
-}
-
-/* Mermaid 图表样式 */
-.mermaid-container svg {
-  max-width: 100%;
-  height: auto;
 }

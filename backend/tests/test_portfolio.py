@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,6 +9,7 @@ from app.main import app
 from app.models.portfolio import Snapshot
 from app.routers import portfolio as portfolio_router
 from app.services.instrument_search import InstrumentSearch, parse_east_stocks, parse_funds, parse_yahoo
+from app.services.cache_service import CacheNamespace, NamespaceSpec
 from app.services.market_service import MarketError, MarketService
 from app.services.portfolio_store import PortfolioStore, merge_history
 
@@ -116,8 +118,12 @@ def test_merge_history_keeps_latest_point_per_minute():
     assert merge_history([], [future], now=0) == []
 
 
+def fresh(name: str, ttl: float = 300, stale: bool = True) -> CacheNamespace:
+    return CacheNamespace(NamespaceSpec(name, name, ttl, 50, stale_on_error=stale))
+
+
 def test_quote_and_fx_parsing_with_stale_fallback():
-    service = MarketService()
+    service = MarketService(quotes=fresh("quote"), fx=fresh("fx"))
     calls = []
 
     async def fake(url):
@@ -142,8 +148,8 @@ def test_quote_and_fx_parsing_with_stale_fallback():
         with pytest.raises(MarketError):
             await service.quote("^GSPC")
         # Expire the cached quote, make the provider fail, expect the stale copy.
-        key = "quote:AAPL"
-        service._memory[key] = (service._memory[key][0], 0)
+        service._quotes.set("AAPL", service._quotes.peek("AAPL"), ttl=0.001)
+        time.sleep(0.01)
 
         async def failing(url):
             raise MarketError("down")
@@ -173,7 +179,7 @@ def test_search_parsers_and_routes(client, monkeypatch):
     funds = {"Datas": [{"CODE": "006075", "NAME": "博时标普500ETF联接C", "FundBaseInfo": {}}, {"CODE": "000001", "NAME": "美元债", "FundBaseInfo": {}}]}
     assert [i["symbol"] for i in parse_funds(funds)] == ["006075"]
 
-    search = InstrumentSearch()
+    search = InstrumentSearch(cache=fresh("search", 60, stale=False))
 
     async def fake(url):
         if "eastmoney" in url:

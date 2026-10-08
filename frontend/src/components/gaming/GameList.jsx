@@ -1,207 +1,99 @@
-import { useState, useEffect, useRef } from 'react';
-import { Loader2, RefreshCw, Search, Download, LayoutGrid, LayoutList, Sparkles } from 'lucide-react';
-import GameCardV2 from './GameCardV2';
-import gamingApi from '../../services/gamingApi';
-import { Button } from '../ui/Button';
+import { useState } from 'react';
+import { Search } from 'lucide-react';
+import { Select } from '../ui/Select';
+import { cn } from '../../lib/utils';
+import { formatHours, lastPlayed } from './format';
 
-export default function GameList({ refresh, onGameSelect }) {
-  const [games, setGames] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('playtime');
-  const [cacheStatus, setCacheStatus] = useState(null);
-  const [viewMode, setViewMode] = useState('masonry'); // 'grid' | 'masonry' | 'compact'
-  const pollRef = useRef(null);
+const SORTS = [
+  { value: 'playtime', label: '游玩最多' },
+  { value: 'recent', label: '最近游玩' },
+  { value: 'name', label: '名称' },
+];
+const PAGE = 40;
 
-  useEffect(() => {
-    fetchGames();
-  }, [refresh]);
 
-  const fetchGames = async () => {
-    try {
-      setLoading(true);
-      const response = await gamingApi.getGames();
-      setGames(response.data.games || []);
-    } catch (error) {
-      console.error('Failed to fetch games:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+function Capsule({ appid }) {
+  const [failed, setFailed] = useState(false);
+  return failed ? (
+    <span className="h-[34px] w-[92px] shrink-0 rounded-[5px] bg-muted" />
+  ) : (
+    <img
+      src={`https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/capsule_184x69.jpg`}
+      alt=""
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="h-[34px] w-[92px] shrink-0 rounded-[5px] object-cover"
+    />
+  );
+}
 
-  const handleSync = async () => {
-    try {
-      setSyncing(true);
-      const res = await gamingApi.syncGames();
-      await fetchGames();
+/** 紧凑游戏列表：一行一款，右侧条形表示相对时长 */
+export default function GameList({ games, selectedId, onSelect }) {
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState('playtime');
+  const [limit, setLimit] = useState(PAGE);
 
-      // Start polling if caching started
-      if (res.data.caching_started) {
-        startCachePolling();
-      }
-    } catch (error) {
-      console.error('Failed to sync games:', error);
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  const startCachePolling = () => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = setInterval(async () => {
-      try {
-        const res = await gamingApi.getCacheSyncStatus();
-        setCacheStatus(res.data);
-        if (!res.data.running) {
-          clearInterval(pollRef.current);
-          pollRef.current = null;
-        }
-      } catch (e) {
-        console.error('Failed to get cache status:', e);
-      }
-    }, 2000);
-  };
-
-  useEffect(() => {
-    // Check if caching is already running on mount
-    gamingApi.getCacheSyncStatus().then(res => {
-      if (res.data.running) {
-        setCacheStatus(res.data);
-        startCachePolling();
-      }
-    }).catch(() => {});
-
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, []);
-
-  const filteredGames = games
-    .filter(game =>
-      game.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortBy === 'playtime') return b.playtime_forever - a.playtime_forever;
-      if (sortBy === 'name') return a.name.localeCompare(b.name);
-      if (sortBy === 'recent') return (b.playtime_2weeks || 0) - (a.playtime_2weeks || 0);
-      return 0;
-    });
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
-      </div>
+  const q = query.trim().toLowerCase();
+  const shown = games
+    .filter((g) => !q || g.name.toLowerCase().includes(q))
+    .sort((a, b) =>
+      sort === 'name' ? a.name.localeCompare(b.name) : sort === 'recent' ? (b.rtime_last_played || 0) - (a.rtime_last_played || 0) : (b.playtime_forever || 0) - (a.playtime_forever || 0),
     );
-  }
+  const max = Math.max(1, ...games.map((g) => g.playtime_forever || 0));
 
   return (
-    <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-          <input
-            type="text"
-            placeholder="搜索游戏…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          {/* View Mode Toggle */}
-          <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-zinc-700/50'}`}
-              title="网格视图" aria-label="网格视图"
-            >
-              <LayoutGrid className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-            </button>
-            <button
-              onClick={() => setViewMode('masonry')}
-              className={`p-1.5 rounded ${viewMode === 'masonry' ? 'bg-white dark:bg-zinc-700 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-zinc-700/50'}`}
-              title="瀑布流视图" aria-label="瀑布流视图"
-            >
-              <Sparkles className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-            </button>
-            <button
-              onClick={() => setViewMode('compact')}
-              className={`p-1.5 rounded ${viewMode === 'compact' ? 'bg-white dark:bg-zinc-700 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-zinc-700/50'}`}
-              title="紧凑视图" aria-label="紧凑视图"
-            >
-              <LayoutList className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-            </button>
-          </div>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm"
-          >
-            <option value="playtime">游玩最多</option>
-            <option value="recent">最近游玩</option>
-            <option value="name">名称</option>
-          </select>
-          <Button variant="outline" onClick={handleSync} disabled={syncing}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-            同步
-          </Button>
-        </div>
+    <div>
+      <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
+        <label className="flex h-8 max-w-[300px] flex-[1_1_200px] items-center gap-1.5 rounded-[7px] border border-input bg-card px-2 text-muted-foreground focus-within:border-ring">
+          <Search className="size-3.5" aria-hidden="true" />
+          <span className="sr-only">搜索游戏</span>
+          <input value={query} onChange={(e) => { setQuery(e.target.value); setLimit(PAGE); }} placeholder="搜索游戏" className="w-full min-w-0 bg-transparent text-[13px] text-foreground outline-none" />
+        </label>
+        <label className="sr-only" htmlFor="game-sort">排序</label>
+        <Select id="game-sort" value={sort} onChange={(e) => setSort(e.target.value)} className="w-auto">
+          {SORTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </Select>
+        <span className="ml-auto text-xs text-muted-foreground">{shown.length} 款</span>
       </div>
-
-      {/* Cache Progress */}
-      {cacheStatus?.running && (
-        <div className="bg-violet-50 dark:bg-violet-900/20 rounded-lg p-4 border border-violet-200 dark:border-violet-800">
-          <div className="flex items-center gap-3 mb-2">
-            <Download className="h-4 w-4 text-violet-600 dark:text-violet-400 animate-pulse" />
-            <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
-              正在缓存游戏数据…
-            </span>
-            <span className="text-xs text-violet-600 dark:text-violet-400 ml-auto">
-              {cacheStatus.completed} / {cacheStatus.total}
-            </span>
-          </div>
-          <div className="h-2 bg-violet-200 dark:bg-violet-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-violet-500 rounded-full transition-all duration-300"
-              style={{ width: `${(cacheStatus.completed / cacheStatus.total) * 100}%` }}
-            />
-          </div>
-          {cacheStatus.current_game && (
-            <p className="text-xs text-violet-600 dark:text-violet-400 mt-2 truncate">
-              {cacheStatus.current_game}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Games Grid */}
-      {filteredGames.length === 0 ? (
-        <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
-          <p>没有找到游戏。点击“同步”从 Steam 获取。</p>
-        </div>
-      ) : viewMode === 'grid' ? (
-        // V1: Vertical card grid layout
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {filteredGames.map((game, index) => (
-            <GameCardV2 key={game.appid} game={game} onClick={onGameSelect} index={index} viewMode="grid" />
+      {shown.length ? (
+        <ul className="m-0 list-none p-0">
+          {shown.slice(0, limit).map((game) => (
+            <li key={game.appid}>
+              <button
+                type="button"
+                aria-pressed={game.appid === selectedId}
+                onClick={() => onSelect(game)}
+                className={cn(
+                  'flex w-full items-center gap-2.5 border-t border-border py-1.5 pl-4 pr-3 text-left',
+                  game.appid === selectedId ? 'bg-accent' : 'hover:bg-muted/60',
+                )}
+              >
+                <Capsule appid={game.appid} />
+                <span className="min-w-0 flex-1">
+                  <strong className="block truncate font-medium">{game.name}</strong>
+                  <span className="text-xs text-muted-foreground">
+                    {lastPlayed(game) ? `最近 ${lastPlayed(game)}` : '未记录游玩时间'}
+                    {game.playtime_2weeks ? ` · 近两周 ${formatHours(game.playtime_2weeks)}` : ''}
+                  </span>
+                </span>
+                <span className="flex w-24 shrink-0 flex-col items-end gap-1">
+                  <span className="tabular text-xs">{formatHours(game.playtime_forever)}</span>
+                  <span className="block h-1 w-20 overflow-hidden rounded-full bg-muted">
+                    <i className="block h-full rounded-full bg-primary" style={{ width: `${((game.playtime_forever || 0) / max) * 100}%` }} />
+                  </span>
+                </span>
+              </button>
+            </li>
           ))}
-        </div>
-      ) : viewMode === 'compact' ? (
-        // Compact list layout
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-          {filteredGames.map((game, index) => (
-            <GameCardV2 key={game.appid} game={game} onClick={onGameSelect} index={index} viewMode="compact" />
-          ))}
-        </div>
+        </ul>
       ) : (
-        // V2: Masonry layout with CSS columns (true masonry, no stretching)
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-          {filteredGames.map((game, index) => (
-            <GameCardV2 key={game.appid} game={game} onClick={onGameSelect} index={index} viewMode="masonry" />
-          ))}
+        <p className="border-t border-border px-4 py-8 text-center text-muted-foreground">
+          {games.length ? '没有匹配的游戏。' : '没有找到游戏。点击“同步”从 Steam 获取。'}
+        </p>
+      )}
+      {limit < shown.length && (
+        <div className="border-t border-border px-4 py-2 text-right">
+          <button type="button" onClick={() => setLimit((n) => n + PAGE)} className="text-xs font-medium text-accent-foreground hover:underline">加载更多</button>
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api';
 import { Plane, MapPin, Loader2, Navigation, Globe, Map, Info } from 'lucide-react';
-import api from '../../services/api';
+import { useApi } from '../../services/api';
 
 const mapContainerStyle = {
   width: '100%',
@@ -378,40 +378,12 @@ const FlightMapInner = ({ apiKey, mapData }) => {
 
 // Outer component that handles API key loading
 const FlightMap = () => {
-  const [mapData, setMapData] = useState({ airports: [], routes: [] });
-  const [loading, setLoading] = useState(true);
-  const [apiKey, setApiKey] = useState('');
-  const [keyLoading, setKeyLoading] = useState(true);
-
-  // Fetch API key from backend
-  useEffect(() => {
-    const fetchApiKey = async () => {
-      try {
-        const response = await api.get('/config/google-maps-key');
-        setApiKey(response.data.key || '');
-      } catch (error) {
-        console.error('Failed to fetch Google Maps API key:', error);
-      } finally {
-        setKeyLoading(false);
-      }
-    };
-    fetchApiKey();
-  }, []);
-
-  // Fetch map data
-  useEffect(() => {
-    const fetchMapData = async () => {
-      try {
-        const response = await api.get('/travel/map-data');
-        setMapData(response.data);
-      } catch (error) {
-        console.error('Failed to fetch map data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMapData();
-  }, []);
+  const keyQuery = useApi('/config/google-maps-key', { ttl: 10 * 60_000 });
+  const mapQuery = useApi('/travel/map-data');
+  const apiKey = keyQuery.data?.key || '';
+  const mapData = mapQuery.data ?? { airports: [], routes: [] };
+  const keyLoading = keyQuery.isLoading;
+  const loading = mapQuery.isLoading;
 
   if (keyLoading || loading) {
     return (
@@ -426,8 +398,8 @@ const FlightMap = () => {
       <div className="flex items-center justify-center h-96 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
         <div className="text-center text-zinc-500 dark:text-zinc-400">
           <MapPin className="h-12 w-12 mx-auto mb-3 opacity-50" />
-          <p className="font-medium">Google Maps API Key Required</p>
-          <p className="text-sm mt-1">Configure your API key in Settings &gt; API Keys</p>
+          <p className="font-medium">需要 Google Maps API 密钥</p>
+          <p className="text-sm mt-1">请在 设置 › API 密钥 中配置</p>
         </div>
       </div>
     );

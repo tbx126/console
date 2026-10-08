@@ -1,205 +1,275 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Bot, ChartPie, Gamepad2, Plane, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
-import { Card } from '../components/ui/Card';
+import { StatStrip } from '../components/ui/StatStrip';
+import { Section } from '../components/ui/Section';
+import { SegmentedTabs } from '../components/ui/SegmentedTabs';
 import { Skeleton } from '../components/ui/Skeleton';
-import travelApi from '../services/travelApi';
-import gamingApi from '../services/gamingApi';
+import { Button } from '../components/ui/Button';
+import EmojiPicker from '../components/dashboard/EmojiPicker';
+import { useApi } from '../services/api';
+import { invalidate, useQuery } from '../lib/query';
 import { loadPortfolioSummary } from '../features/portfolio/lib/summary';
 import { categoryMeta, money } from '../features/portfolio/lib/portfolio';
 
 const number = new Intl.NumberFormat('zh-CN');
+const MODULES = { portfolio: '资产', travel: '旅行', gaming: '游戏' };
+const FILTERS = [{ id: 'all', label: '全部' }, ...Object.entries(MODULES).map(([id, label]) => ({ id, label }))];
+const today = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' }).format(new Date());
 
-function MetricCard({ to, label, value, caption, loading }) {
-  const body = (
-    <>
-      <span className="text-[13px] text-muted-foreground">{label}</span>
-      {loading ? (
-        <Skeleton className="h-9 w-40" />
-      ) : (
-        <strong className="tabular text-[28px] font-semibold leading-tight tracking-tight">{value}</strong>
-      )}
-      <span className="text-xs text-muted-foreground">{caption}</span>
-    </>
-  );
-  const className = 'flex min-w-0 flex-col gap-2.5 rounded-xl border border-border bg-card px-6 py-5 text-foreground';
-  return to ? (
-    <Link to={to} className={`${className} transition-colors hover:border-ring`}>
-      {body}
-    </Link>
-  ) : (
-    <div className={className}>{body}</div>
+function Sparkline({ points }) {
+  if (points.length < 2) return null;
+  const vs = points.map((p) => p.v);
+  const lo = Math.min(...vs);
+  const hi = Math.max(...vs);
+  const t0 = points[0].t;
+  const t1 = points[points.length - 1].t;
+  const xy = points.map((p) => [((p.t - t0) / (t1 - t0 || 1)) * 200, 44 - ((p.v - lo) / (hi - lo || 1)) * 40]);
+  const line = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const rising = vs[vs.length - 1] >= vs[0];
+  return (
+    <svg viewBox="0 0 200 48" preserveAspectRatio="none" className="h-12 min-w-[120px] flex-1" role="img" aria-label={`近 90 天资产走势，整体${rising ? '上升' : '下降'}`}>
+      <path d={`M0,48 L${line.replaceAll(' ', ' L')} L200,48 Z`} fill="var(--chart-area)" />
+      <polyline points={line} fill="none" stroke="var(--cat-stock)" strokeWidth="2" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }
 
-const modules = [
-  { to: '/portfolio', icon: ChartPie, title: '资产', text: '现金、股票、基金、黄金与加密货币的当前市值' },
-  { to: '/travel', icon: Plane, title: '旅行足迹', text: '航班记录、航线地图与航司统计' },
-  { to: '/gaming', icon: Gamepad2, title: '游戏库', text: 'Steam 同步、游玩时长与成就' },
-  { to: '/ai-assistant', icon: Bot, title: 'AI 助手', text: '用自然语言记录航班、提问与分析' },
-];
+function ProgressBar({ value, className, label }) {
+  return (
+    <span
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(value * 100)}
+      className={`block h-1.5 overflow-hidden rounded-full bg-muted ${className ?? ''}`}
+    >
+      <i className="block h-full rounded-full bg-primary" style={{ width: `${Math.min(100, value * 100)}%` }} />
+    </span>
+  );
+}
 
-const Dashboard = () => {
-  const [portfolio, setPortfolio] = useState({ loading: true, data: null, error: false });
-  const [travel, setTravel] = useState(null);
-  const [gaming, setGaming] = useState(null);
-  const [reload, setReload] = useState(0);
+const pct = (v) => `${(v * 100).toFixed(1)}%`;
 
-  useEffect(() => {
-    const controller = new AbortController();
-    loadPortfolioSummary(controller.signal)
-      .then((data) => setPortfolio({ loading: false, data, error: false }))
-      .catch(() => { if (!controller.signal.aborted) setPortfolio({ loading: false, data: null, error: true }); });
-    travelApi.getStatistics().then(setTravel).catch(() => setTravel(false));
-    gamingApi.getStatistics().then((r) => setGaming(r.data)).catch(() => setGaming(false));
-    return () => controller.abort();
-  }, [reload]);
+export default function Dashboard() {
+  const [filter, setFilter] = useState('all');
+  const summaryQuery = useQuery('/portfolio/summary', () => loadPortfolioSummary(), { ttl: 60_000 });
+  const milestonesQuery = useApi('/milestones', { ttl: 60_000 });
+  const travel = useApi('/travel/statistics');
+  const gaming = useApi('/gaming/statistics', { ttl: 10 * 60_000 });
+  const flights = useApi('/travel/flights');
+  const games = useApi('/gaming/games', { ttl: 10 * 60_000 });
 
-  const summary = portfolio.data;
+  const summary = summaryQuery.data;
+  const milestones = milestonesQuery.data;
+  const currency = summary?.currency ?? 'SGD';
+  const keep = (m) => filter === 'all' || m.module === filter;
+  const upcoming = (milestones?.upcoming ?? []).filter(keep);
+  const achieved = (milestones?.achieved ?? []).filter(keep);
+  const next = (milestones?.upcoming ?? []).find((m) => m.module === 'portfolio') ?? milestones?.upcoming?.[0];
+
+  const activity = useMemo(() => {
+    const items = [];
+    for (const f of [...(flights.data ?? [])].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4)) {
+      items.push({ module: '旅行', to: '/travel', text: `${f.flight_number} ${f.origin} → ${f.destination}`, date: f.date.slice(0, 10) });
+    }
+    for (const a of summary?.recent ?? []) {
+      items.push({ module: '资产', to: '/portfolio', text: `更新 ${a.name}`, date: a.updatedAt.slice(0, 10) });
+    }
+    for (const g of [...(games.data?.games ?? [])].filter((g) => g.rtime_last_played).sort((a, b) => b.rtime_last_played - a.rtime_last_played).slice(0, 3)) {
+      items.push({ module: '游戏', to: '/gaming', text: `最近在玩 ${g.name}`, date: new Date(g.rtime_last_played * 1000).toISOString().slice(0, 10) });
+    }
+    return items.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
+  }, [flights.data, games.data, summary?.recent]);
+
+  const refresh = () => {
+    invalidate();
+  };
+
   const total = summary?.total ?? 0;
-  const portfolioValue = portfolio.error ? '暂不可用' : summary?.empty ? '尚无持仓' : money(total, summary?.currency ?? 'SGD', 0);
-  const portfolioCaption = portfolio.error
-    ? '无法连接资产数据'
-    : summary?.empty
-      ? '前往资产页添加或导入'
-      : `${summary?.assetCount ?? 0} 项资产${summary?.missing ? ` · ${summary.missing} 项待估值` : ''}`;
+  const loadingSummary = summaryQuery.isLoading;
 
   return (
     <div className="page">
       <PageHeader
-        eyebrow="Personal Life Console"
         title="总览"
-        description="资产、旅行与游戏，在一处查看。"
+        meta={today}
         actions={
-          <button
-            type="button"
-            onClick={() => {
-              setPortfolio((p) => ({ ...p, loading: true }));
-              setTravel(null);
-              setGaming(null);
-              setReload((n) => n + 1);
-            }}
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-sm font-medium hover:bg-muted"
-          >
-            <RefreshCw className="size-4" aria-hidden="true" />
+          <Button variant="outline" onClick={refresh} isLoading={summaryQuery.isFetching || milestonesQuery.isFetching}>
+            {!(summaryQuery.isFetching || milestonesQuery.isFetching) && <RefreshCw />}
             刷新
-          </button>
+          </Button>
         }
       />
 
-      <section aria-label="关键指标" className="mb-5 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
-        <MetricCard
-          to="/portfolio"
-          label={`总资产 · ${summary?.currency ?? 'SGD'}`}
-          value={portfolioValue}
-          caption={portfolioCaption}
-          loading={portfolio.loading}
-        />
-        <MetricCard
-          to="/travel"
-          label="累计飞行"
-          value={travel ? `${number.format(travel.total_flights)} 段` : '—'}
-          caption={travel ? `${number.format(Math.round(travel.total_km))} km · 今年 ${travel.this_year_flights} 段` : '暂无航班数据'}
-          loading={travel === null}
-        />
-        <MetricCard
-          to="/gaming"
-          label="游戏库"
-          value={gaming ? `${number.format(gaming.total_games)} 款` : '—'}
-          caption={gaming ? `近两周游玩 ${Math.round((gaming.recent_playtime ?? 0) / 60)} 小时` : '暂无游戏数据'}
-          loading={gaming === null}
-        />
+      <section className="flex flex-wrap overflow-hidden rounded-[10px] border border-border bg-card">
+        <Link to="/portfolio/insights" className="flex flex-[1_1_380px] flex-wrap items-end gap-4 px-4 py-3.5 text-foreground hover:bg-muted/50">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-muted-foreground">总资产 · {currency}</span>
+            {loadingSummary ? (
+              <Skeleton className="h-9 w-48" />
+            ) : (
+              <strong className="tabular text-[28px] font-semibold leading-tight tracking-tight">
+                {summaryQuery.error ? '暂不可用' : summary?.empty ? '尚无持仓' : money(total, currency, 0)}
+              </strong>
+            )}
+            <span className="text-xs text-muted-foreground">
+              {summary?.change30 != null && (
+                <strong className="tabular font-semibold text-foreground">
+                  {summary.change30 >= 0 ? '+' : '−'}
+                  {money(Math.abs(summary.change30), currency, 0)}{' '}
+                </strong>
+              )}
+              {summary?.change30 != null ? '近 30 天 · ' : ''}
+              {summary ? `${summary.assetCount} 项资产${summary.missing ? ` · ${summary.missing} 项待估值` : ''}` : ''}
+            </span>
+          </div>
+          <Sparkline points={summary?.trend ?? []} />
+        </Link>
+        <a href="#milestones" className="flex flex-[1_1_300px] flex-col justify-center gap-1.5 border-l border-border bg-accent px-4 py-3.5 text-foreground">
+          {next ? (
+            <>
+              <div className="flex items-baseline justify-between gap-2">
+                <span>
+                  <span className="text-xs text-accent-foreground">下一个里程碑</span>
+                  <br />
+                  <strong className="text-[15px] font-semibold">{next.title}</strong>
+                </span>
+                <strong className="tabular text-xl font-semibold text-accent-foreground">{pct(next.progress)}</strong>
+              </div>
+              <ProgressBar value={next.progress} label={`距离${next.title}`} className="bg-card" />
+              <span className="text-xs text-muted-foreground">
+                {next.detail}
+                {next.eta ? ` · 按近 90 天增速约 ${next.eta} 达成` : ''}
+              </span>
+            </>
+          ) : milestonesQuery.isLoading ? (
+            <Skeleton className="h-14" />
+          ) : (
+            <span className="text-xs text-muted-foreground">记录资产、航班或同步游戏后，这里会显示下一个里程碑。</span>
+          )}
+        </a>
       </section>
 
-      <section className="mb-5 grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-5">
-        <Card className="px-6 py-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[17px] font-semibold">资产分布</h2>
-            <Link to="/portfolio" className="text-[13px] font-medium text-accent-foreground hover:underline">
-              查看资产 →
-            </Link>
-          </div>
-          {portfolio.loading ? (
-            <Skeleton className="mt-6 h-24" />
-          ) : summary && !summary.empty && total > 0 ? (
-            <>
-              <div className="mb-5 mt-6 flex h-2.5 gap-0.5 overflow-hidden rounded-md" aria-hidden="true">
-                {summary.byCategory.filter((c) => c.value > 0).map((c) => (
-                  <i key={c.category} style={{ flex: c.value, background: categoryMeta[c.category].color }} />
-                ))}
-              </div>
-              <ul className="grid grid-cols-2 gap-x-7 gap-y-3 text-sm">
-                {summary.byCategory.map((c) => (
-                  <li key={c.category} className="flex items-center justify-between gap-3">
-                    <span className="flex items-center gap-2.5">
-                      <i className="size-2 rounded-[3px]" style={{ background: categoryMeta[c.category].color }} />
-                      {categoryMeta[c.category].name}
+      <StatStrip
+        label="模块指标"
+        loading={travel.isLoading && gaming.isLoading}
+        items={[
+          { label: '今年飞行', value: travel.data ? `${travel.data.this_year_flights} 段` : '—', hint: travel.data ? `累计 ${number.format(travel.data.total_flights)} 段` : '暂无数据', to: '/travel' },
+          { label: '飞行里程', value: travel.data ? `${number.format(Math.round(travel.data.total_km))} km` : '—', hint: travel.data ? `${travel.data.airlines_used} 家航司` : '', to: '/travel' },
+          { label: '到访地点', value: travel.data ? number.format(travel.data.airports_visited) : '—', hint: travel.data?.favorite_airline ? `常飞 ${travel.data.favorite_airline}` : '', to: '/travel' },
+          { label: '游戏库', value: gaming.data ? `${number.format(gaming.data.total_games)} 款` : '—', hint: gaming.data ? `近两周 ${Math.round((gaming.data.recent_playtime ?? 0) / 60)} 小时` : '暂无数据', to: '/gaming' },
+        ]}
+      />
+
+      <div className="flex flex-wrap items-start gap-3">
+        <Section
+          id="milestones"
+          className="flex-[999_1_520px] scroll-mt-16"
+          title="里程碑"
+          meta={milestones ? `${achieved.length} 个已达成 · ${upcoming.length} 个进行中` : ''}
+          actions={<SegmentedTabs size="sm" label="按模块筛选" tabs={FILTERS} value={filter} onChange={setFilter} />}
+        >
+          {milestonesQuery.isLoading ? (
+            <Skeleton className="h-40" />
+          ) : milestonesQuery.error ? (
+            <p className="py-6 text-center text-muted-foreground">里程碑暂不可用。</p>
+          ) : (
+            <div className="grid gap-x-7" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+              <div>
+                <div className="py-1 text-xs text-muted-foreground">进行中</div>
+                {upcoming.slice(0, 5).map((m) => (
+                  <div key={m.id} className="grid grid-cols-[28px_minmax(0,1fr)_auto] items-start gap-2.5 border-t border-border py-2">
+                    <span className="mx-auto mt-1 size-3 rounded-full border-2 border-dashed border-muted-foreground" aria-hidden="true" />
+                    <span className="flex min-w-0 flex-col gap-1">
+                      <span>
+                        <strong className="font-semibold">{m.title}</strong>
+                        <span className="ml-1.5 rounded bg-muted px-1.5 py-px text-[11px] text-muted-foreground">{MODULES[m.module]}</span>
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {m.detail}
+                        {m.eta ? ` · 预计 ${m.eta}` : ''}
+                      </span>
+                      <ProgressBar value={m.progress} label={`${m.title} 进度`} />
                     </span>
-                    <strong className="tabular font-medium">{((c.value / total) * 100).toFixed(1)}%</strong>
+                    <span className="tabular text-right font-semibold">{pct(m.progress)}</span>
+                  </div>
+                ))}
+                {!upcoming.length && <p className="border-t border-border py-4 text-xs text-muted-foreground">暂无进行中的里程碑。</p>}
+              </div>
+              <div>
+                <div className="py-1 text-xs text-muted-foreground">已达成</div>
+                {achieved.slice(0, 6).map((m) => (
+                  <div key={m.id} className="grid grid-cols-[28px_minmax(0,1fr)_auto] items-start gap-2.5 border-t border-border py-2">
+                    <EmojiPicker milestone={m} />
+                    <span className="min-w-0">
+                      <strong className="font-semibold">{m.title}</strong>
+                      <span className="ml-1.5 rounded bg-muted px-1.5 py-px text-[11px] text-muted-foreground">{MODULES[m.module]}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{m.detail}</span>
+                    </span>
+                    <span className="tabular text-right text-xs text-muted-foreground">{m.date ?? '已达成'}</span>
+                  </div>
+                ))}
+                {!achieved.length && <p className="border-t border-border py-4 text-xs text-muted-foreground">还没有达成的里程碑。</p>}
+              </div>
+            </div>
+          )}
+        </Section>
+
+        <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-3">
+          <Section title="资产分布" actions={<Link to="/portfolio/insights" className="text-xs font-medium text-accent-foreground hover:underline">分析 →</Link>}>
+            {loadingSummary ? (
+              <Skeleton className="h-28" />
+            ) : summary && total > 0 ? (
+              <>
+                <div className="mb-1 mt-1 flex h-2 gap-0.5 overflow-hidden rounded" aria-hidden="true">
+                  {summary.byCategory.filter((c) => c.value > 0).map((c) => (
+                    <i key={c.category} style={{ flex: c.value, background: categoryMeta[c.category].color }} />
+                  ))}
+                </div>
+                <ul className="m-0 list-none p-0">
+                  {summary.byCategory.map((c) => (
+                    <li key={c.category} className="flex items-center gap-2.5 border-t border-border py-1.5 first:border-t-0">
+                      <i className="size-2 rounded-[2px]" style={{ background: categoryMeta[c.category].color }} />
+                      <span className="flex-1">{categoryMeta[c.category].name}</span>
+                      {c.missing === c.count ? (
+                        <span className="text-xs text-muted-foreground">待估值</span>
+                      ) : (
+                        <>
+                          <span className="tabular text-xs text-muted-foreground">{money(c.value, currency, 0)}</span>
+                          <strong className="tabular w-12 text-right font-medium">{((c.value / total) * 100).toFixed(1)}%</strong>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="py-4 text-xs text-muted-foreground">{summaryQuery.error ? '资产数据暂不可用。' : '还没有可估值的持仓。'}</p>
+            )}
+          </Section>
+
+          <Section title="最近动态" meta="跨模块">
+            {activity.length ? (
+              <ul className="m-0 list-none p-0">
+                {activity.map((item) => (
+                  <li key={`${item.module}-${item.text}-${item.date}`} className="border-t border-border first:border-t-0">
+                    <Link to={item.to} className="flex items-center gap-2.5 py-1.5 text-foreground hover:text-accent-foreground">
+                      <span className="w-8 shrink-0 rounded bg-muted py-px text-center text-[11px] text-muted-foreground">{item.module}</span>
+                      <span className="min-w-0 flex-1 truncate">{item.text}</span>
+                      <span className="tabular text-xs text-muted-foreground">{item.date.slice(5)}</span>
+                    </Link>
                   </li>
                 ))}
               </ul>
-            </>
-          ) : (
-            <p className="mt-6 text-sm text-muted-foreground">
-              {portfolio.error ? '资产数据暂不可用，请稍后刷新。' : '还没有可估值的持仓。'}
-            </p>
-          )}
-        </Card>
-
-        <Card className="px-6 py-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[17px] font-semibold">旅行</h2>
-            <Link to="/travel" className="text-[13px] font-medium text-accent-foreground hover:underline">
-              全部航班 →
-            </Link>
-          </div>
-          {travel ? (
-            <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
-              {[
-                ['到访城市', travel.cities_visited],
-                ['到访机场', travel.airports_visited],
-                ['乘坐航司', travel.airlines_used],
-                ['最常乘坐', travel.favorite_airline || '—'],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <dt className="text-xs text-muted-foreground">{label}</dt>
-                  <dd className="tabular mt-1 truncate text-lg font-semibold">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : travel === null ? (
-            <Skeleton className="mt-6 h-24" />
-          ) : (
-            <p className="mt-6 text-sm text-muted-foreground">旅行数据暂不可用。</p>
-          )}
-        </Card>
-      </section>
-
-      <section aria-label="模块" className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
-        {modules.map(({ to, icon, title, text }) => {
-          const Icon = icon;
-          return (
-          <Link
-            key={to}
-            to={to}
-            className="group flex min-w-0 flex-col gap-2.5 rounded-xl border border-border bg-card p-5 text-foreground transition-colors hover:border-ring"
-          >
-            <span className="grid size-9 place-items-center rounded-[9px] bg-accent text-accent-foreground">
-              <Icon className="size-[18px]" aria-hidden="true" />
-            </span>
-            <strong className="flex items-center justify-between text-[15px] font-semibold">
-              {title}
-              <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-            </strong>
-            <span className="text-[13px] text-muted-foreground">{text}</span>
-          </Link>
-          );
-        })}
-      </section>
+            ) : (
+              <p className="py-4 text-xs text-muted-foreground">暂无动态。</p>
+            )}
+          </Section>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default Dashboard;
+}

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { currencies, sample, sampleQuotes, sampleFx, portfolioSchema, quoteSchema, fxSchema, historySchema, keyOf, type Portfolio, type Quote, type Fx, type Currency, type Snapshot } from "./portfolio";
 import { captureSnapshot, mergeHistory } from "./history";
 import { sharedSchema, type SharedPortfolio } from "./shared-portfolio";
+import { invalidate } from "@/lib/query";
 const KEYS = { holdings: "folio.holdings.v1", market: "folio.market.v1", settings: "folio.settings.v1", history: "folio.history.v1" };
 const QUOTE_TTL = 5 * 60 * 1000, FX_TTL = 24 * 60 * 60 * 1000;
 function save(key: string, data: unknown) { try { localStorage.setItem(key, JSON.stringify(data)); return true; } catch { return false; } }
@@ -70,7 +71,7 @@ export function usePortfolio() {
           try {
             const result = await sharedRequest("POST", { revision: shared.revision, snapshot });
             if (ticket === generation.current && sharedRef.current?.revision === result.revision && (result.updatedAt ?? "") >= (sharedRef.current.updatedAt ?? "")) {
-              sharedRef.current = result; const points = result.portfolio?.history ?? [];
+              sharedRef.current = result; invalidate("/portfolio"); invalidate("/milestones"); const points = result.portfolio?.history ?? [];
               historyRef.current = points; setHistory(points); save(KEYS.history, points);
             }
           } catch (error) { if (ticket === generation.current && (error as { status?: number }).status !== 409) setSyncState("offline"); }
@@ -133,7 +134,7 @@ export function usePortfolio() {
     busy.current = true; setSyncState("saving");
     try {
       const result = await sharedRequest("PUT", { revision: expectedRevision, portfolio: { ...checked, history: mergeHistory(historyRef.current, checked.history ?? []) } });
-      applyShared(result); setErrors([]); setQuotes(realQuotes.current); setFx(realFx.current);
+      applyShared(result); invalidate("/portfolio"); invalidate("/milestones"); setErrors([]); setQuotes(realQuotes.current); setFx(realFx.current);
       void refresh(result.portfolio!, false, true, true); toast.success(message ?? `已将 ${checked.assets.length} 项资产保存到 NAS`); return true;
     } catch (error) {
       if ((error as { status?: number }).status === 409) {

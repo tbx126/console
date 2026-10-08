@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { X, Clock, Loader2, Calendar, Building2, Tag, ExternalLink, Star, Newspaper, ChevronLeft, ChevronRight } from 'lucide-react';
-import gamingApi from '../../services/gamingApi';
+import { useApi } from '../../services/api';
 import MediaCarousel from './MediaCarousel';
 
 const toFullUrl = (localPath, fallback) => {
@@ -10,74 +10,26 @@ const toFullUrl = (localPath, fallback) => {
   return fallback;
 };
 
-export default function GameDetail({ game, onClose, cacheRef }) {
-  const [details, setDetails] = useState(null);
-  const [achievements, setAchievements] = useState([]);
-  const [news, setNews] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function GameDetail({ game, onClose }) {
+  const appid = game?.appid;
+  const detailsQuery = useApi(appid ? `/gaming/games/${appid}/details` : null, { ttl: 10 * 60_000 });
+  const achievementsQuery = useApi(appid ? `/gaming/games/${appid}/achievements-detailed` : null, { ttl: 10 * 60_000 });
+  const newsQuery = useApi(appid ? `/gaming/games/${appid}/news` : null, { params: { count: 8 }, ttl: 10 * 60_000 });
+  const details = detailsQuery.data ?? null;
+  const achievements = achievementsQuery.data?.achievements ?? [];
+  const news = newsQuery.data?.news ?? [];
+  const loading = detailsQuery.isLoading && achievementsQuery.isLoading;
 
   useEffect(() => {
-    if (!game) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const fetchData = async () => {
-      const appid = game.appid;
-      const cache = cacheRef?.current;
-
-      if (cache && cache[appid]) {
-        const cached = cache[appid];
-        if (!cancelled) {
-          setDetails(cached.details);
-          setAchievements(cached.achievements);
-          setNews(cached.news);
-          setLoading(false);
-        }
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const [detailsRes, achievementsRes, newsRes] = await Promise.all([
-          gamingApi.getGameDetails(appid).catch(() => ({ data: null })),
-          gamingApi.getDetailedAchievements(appid).catch(() => ({ data: { achievements: [] } })),
-          gamingApi.getGameNews(appid, 8).catch(() => ({ data: { news: [] } }))
-        ]);
-        const nextDetails = detailsRes.data;
-        const nextAchievements = achievementsRes.data.achievements || [];
-        const nextNews = newsRes.data.news || [];
-
-        if (!cancelled) {
-          setDetails(nextDetails);
-          setAchievements(nextAchievements);
-          setNews(nextNews);
-        }
-
-        if (cache) {
-          cache[appid] = { details: nextDetails, achievements: nextAchievements, news: nextNews };
-        }
-      } catch (error) {
-        console.error('Failed to fetch game data:', error);
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void fetchData();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [cacheRef, game]);
+    const onKey = (event) => { if (event.key === 'Escape') onClose?.(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   const formatPlaytime = (minutes) => {
     const hours = Math.floor(minutes / 60);
-    if (hours < 1) return `${minutes} min`;
-    return `${hours.toLocaleString()} hrs`;
+    if (hours < 1) return `${minutes} 分钟`;
+    return `${hours.toLocaleString()} 小时`;
   };
 
   const formatUnlockTime = (timestamp) => {
@@ -105,7 +57,7 @@ export default function GameDetail({ game, onClose, cacheRef }) {
   const unlockedCount = achievements.filter(a => a.achieved === 1).length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose?.()}>
       <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="relative px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
@@ -117,6 +69,7 @@ export default function GameDetail({ game, onClose, cacheRef }) {
           </div>
           <button
             onClick={onClose}
+            aria-label="关闭"
             className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
           >
             <X className="h-5 w-5 text-zinc-500" />
@@ -170,13 +123,13 @@ function LeftColumn({ game, details, formatPlaytime, formatReleaseDate }) {
         )}
         <div className="space-y-2">
           {details?.developers && (
-            <InfoRowCompact icon={Building2} label="Developer" value={details.developers.join(', ')} />
+            <InfoRowCompact icon={Building2} label="开发商" value={details.developers.join(', ')} />
           )}
           {details?.publishers && (
-            <InfoRowCompact icon={Building2} label="Publisher" value={details.publishers.join(', ')} />
+            <InfoRowCompact icon={Building2} label="发行商" value={details.publishers.join(', ')} />
           )}
           {details?.genres && (
-            <InfoRowCompact icon={Tag} label="Genres" value={details.genres.map(g => g.description).join(', ')} />
+            <InfoRowCompact icon={Tag} label="类型" value={details.genres.map(g => g.description).join(', ')} />
           )}
         </div>
       </div>
@@ -184,13 +137,13 @@ function LeftColumn({ game, details, formatPlaytime, formatReleaseDate }) {
       {/* Stats at Bottom */}
       <div className="flex-shrink-0 mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
         <div className="grid grid-cols-2 gap-2">
-          <StatBoxCompact icon={Clock} label="Total" value={formatPlaytime(game.playtime_forever)} />
-          <StatBoxCompact icon={Clock} label="2 Weeks" value={formatPlaytime(game.playtime_2weeks || 0)} />
+          <StatBoxCompact icon={Clock} label="总时长" value={formatPlaytime(game.playtime_forever)} />
+          <StatBoxCompact icon={Clock} label="近两周" value={formatPlaytime(game.playtime_2weeks || 0)} />
           {details?.metacritic && (
-            <StatBoxCompact icon={Star} label="Score" value={details.metacritic.score} />
+            <StatBoxCompact icon={Star} label="评分" value={details.metacritic.score} />
           )}
           {details?.release_date && (
-            <StatBoxCompact icon={Calendar} label="Released" value={formatReleaseDate(details.release_date.date)} />
+            <StatBoxCompact icon={Calendar} label="发行" value={formatReleaseDate(details.release_date.date)} />
           )}
         </div>
         <a
@@ -199,7 +152,7 @@ function LeftColumn({ game, details, formatPlaytime, formatReleaseDate }) {
           rel="noopener noreferrer"
           className="mt-3 inline-flex items-center gap-2 text-xs text-violet-600 hover:text-violet-700 dark:text-violet-400"
         >
-          View on Steam <ExternalLink className="h-3 w-3" />
+          在 Steam 商店打开 <ExternalLink className="h-3 w-3" />
         </a>
       </div>
     </div>

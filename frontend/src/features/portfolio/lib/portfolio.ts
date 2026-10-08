@@ -1,11 +1,13 @@
 import { z } from "zod";
 export const currencies = ["SGD", "USD", "CNY", "HKD"] as const;
 export type Currency = typeof currencies[number];
-export const categories = ["cash", "stock", "fund", "gold", "crypto"] as const;
+// 顺序即图表中的固定颜色顺序：相邻颜色已验证可区分
+export const categories = ["stock", "fund", "cash", "gold", "crypto"] as const;
 export type Category = typeof categories[number];
 export const categoryMeta = {
-  cash: { name: "现金", color: "#5189dc" }, stock: { name: "股票", color: "#555ce4" },
-  fund: { name: "基金", color: "#a17be4" }, gold: { name: "黄金", color: "#d6a647" }, crypto: { name: "加密货币", color: "#49a995" },
+  // 颜色为 CSS 变量（index.css 中定义浅色/深色两套，已通过色盲与对比度检查）
+  cash: { name: "现金", color: "var(--cat-cash)" }, stock: { name: "股票", color: "var(--cat-stock)" },
+  fund: { name: "基金", color: "var(--cat-fund)" }, gold: { name: "黄金", color: "var(--cat-gold)" }, crypto: { name: "加密货币", color: "var(--cat-crypto)" },
 };
 const finite = z.number().finite().nonnegative().max(1e15);
 const date = z.string().datetime({ offset: true });
@@ -22,7 +24,7 @@ const assetSchema = z.discriminatedUnion("category", [
   z.object({ ...base, category: z.literal("gold"), quantity: finite }),
   z.object({ ...base, category: z.literal("crypto"), currency: z.literal("USD"), symbol: securitySymbol.regex(/^[A-Z0-9]+-USD$/), quantity: finite }),
 ]);
-export const snapshotSchema = z.object({ at: date, totals: z.object({ SGD: finite, USD: finite, CNY: finite, HKD: finite }), cached: z.boolean() });
+export const snapshotSchema = z.object({ at: date, totals: z.object({ SGD: finite, USD: finite, CNY: finite, HKD: finite }), cached: z.boolean(), categories: z.object({ cash: finite, stock: finite, fund: finite, gold: finite, crypto: finite }).optional() });
 export const historySchema = z.array(snapshotSchema).max(2000);
 export type Snapshot = z.infer<typeof snapshotSchema>;
 export const portfolioSchema = z.object({ version: z.literal(1), asOf: date, assets: z.array(assetSchema).max(200), history: historySchema.optional() }).superRefine((v, ctx) => {

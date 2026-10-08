@@ -1,25 +1,22 @@
 """Quotes, gold price and FX for the portfolio module.
 
 No holdings, balances or quantities are sent to external providers: only
-symbols. Results are cached in memory; when a refresh fails the last value is
-returned marked ``stale`` instead of an error.
+symbols. Results live in the shared cache namespaces ``quote`` and ``fx``; when
+a refresh fails the last value is returned marked ``stale`` instead of an error.
 """
-import asyncio
 import math
 import re
 import time
-from collections import OrderedDict
 from datetime import datetime, timezone
-from typing import Any, Awaitable, Callable, Dict
+from typing import Any, Awaitable, Callable
 from urllib.parse import quote as url_quote
 
 import httpx
 
 from app.models.portfolio import CURRENCIES, SECURITY_SYMBOL
+from app.services.cache_service import FX, QUOTES, CacheNamespace
 from app.services.http_client import http_client
 
-QUOTE_TTL = 5 * 60
-FX_TTL = 24 * 60 * 60
 TROY_OUNCE_GRAMS = 31.1034768
 HEADERS = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
 
@@ -44,49 +41,28 @@ async def fetch_json(url: str, timeout: float = 8.0) -> Any:
     return response.json()
 
 
+FETCH_ERRORS = (MarketError, httpx.HTTPError, ValueError, KeyError, TypeError)
+
+
 class MarketService:
-    def __init__(self, max_entries: int = 500):
-        self._memory: "OrderedDict[str, tuple[dict, float]]" = OrderedDict()
-        self._pending: Dict[str, asyncio.Future] = {}
-        self._max_entries = max_entries
+    def __init__(self, quotes: CacheNamespace = QUOTES, fx: CacheNamespace = FX):
+        self._quotes = quotes
+        self._fx = fx
         self.fetch_json: Callable[[str], Awaitable[Any]] = fetch_json
 
-    async def _cached(self, key: str, ttl: float, fetcher: Callable[[], Awaitable[dict]]) -> dict:
-        old = self._memory.get(key)
-        if old and old[1] > time.monotonic():
-            return old[0]
-        pending = self._pending.get(key)
-        if pending:
-            return await asyncio.shield(pending)
-        future: asyncio.Future = asyncio.get_running_loop().create_future()
-        self._pending[key] = future
+    @staticmethod
+    async def _cached(namespace: CacheNamespace, key: str, fetcher: Callable[[], Awaitable[dict]]) -> dict:
         try:
-            try:
-                data = await fetcher()
-            except (MarketError, httpx.HTTPError, ValueError, KeyError, TypeError) as error:
-                if old:
-                    data = {**old[0], "stale": True}
-                else:
-                    raise MarketError(str(error) or "暂无报价") from error
-            else:
-                self._memory[key] = (data, time.monotonic() + ttl)
-                self._memory.move_to_end(key)
-                while len(self._memory) > self._max_entries:
-                    self._memory.popitem(last=False)
-            future.set_result(data)
-            return data
-        except BaseException as error:
-            if not future.done():
-                future.set_exception(error)
-                future.exception()  # mark retrieved
-            raise
-        finally:
-            self._pending.pop(key, None)
+            return await namespace.get_or_fetch(
+                key, fetcher, retry_on=FETCH_ERRORS, mark_stale=lambda old: {**old, "stale": True}
+            )
+        except FETCH_ERRORS as error:
+            raise MarketError(str(error) or "暂无报价") from error
 
     async def quote(self, symbol: str) -> dict:
         if not re.match(SECURITY_SYMBOL, symbol):
             raise MarketError("无效的证券代码")
-        return await self._cached(f"quote:{symbol}", QUOTE_TTL, lambda: self._fetch_quote(symbol))
+        return await self._cached(self._quotes, symbol, lambda: self._fetch_quote(symbol))
 
     async def _fetch_quote(self, symbol: str) -> dict:
         if symbol == "XAU":
@@ -127,7 +103,7 @@ class MarketService:
         raise MarketError(str(last))
 
     async def fx(self) -> dict:
-        return await self._cached("fx:USD", FX_TTL, self._fetch_fx)
+        return await self._cached(self._fx, "USD", self._fetch_fx)
 
     async def _fetch_fx(self) -> dict:
         entries = await self.fetch_json("https://api.frankfurter.dev/v2/rates?base=USD&quotes=SGD,CNY,HKD")
@@ -145,15 +121,6 @@ class MarketService:
         if any(rates[c] <= 0 for c in CURRENCIES):
             raise MarketError("汇率数据不完整")
         return {"rates": rates, "asOf": sorted(dates)[0], "fetchedAt": int(time.time() * 1000), "source": "Frankfurter · 每日参考汇率"}
-
-    def cache_info(self) -> dict:
-        now = time.monotonic()
-        return {
-            "entries": len(self._memory),
-            "fresh": sum(1 for _, expires in self._memory.values() if expires > now),
-            "pending": len(self._pending),
-            "max_entries": self._max_entries,
-        }
 
 
 market_service = MarketService()

@@ -1,20 +1,10 @@
-import apiClient from './api';
+import { get, send } from './api';
 
 const configApi = {
-  getApiKeys: async () => {
-    const response = await apiClient.get('/config/api-keys');
-    return response.data;
-  },
-
-  updateApiKeys: async (keys) => {
-    const response = await apiClient.put('/config/api-keys', keys);
-    return response.data;
-  },
-
-  deleteApiKey: async (keyName) => {
-    const response = await apiClient.delete(`/config/api-keys/${keyName}`);
-    return response.data;
-  }
+  getApiKeys: () => get('/config/api-keys', { ttl: 0, force: true }),
+  updateApiKeys: (keys) => send('put', '/config/api-keys', keys),
+  deleteApiKey: (keyName) => send('delete', `/config/api-keys/${keyName}`),
+  getGoogleMapsKey: () => get('/config/google-maps-key', { ttl: 10 * 60_000 }),
 };
 
 export default configApi;

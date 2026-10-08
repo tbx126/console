@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.models.config import APIKeysConfig
 from app.services.data_manager import data_manager
 from app.config import settings
+from app.services.cache_service import FLIGHT_LOOKUP
 
 router = APIRouter()
 
@@ -49,6 +50,8 @@ async def update_api_keys(config: APIKeysConfig):
         data.setdefault("api_keys", {}).update(updates)
 
     data_manager.update_data(settings.config_data_file, mutate)
+    # New credentials can turn earlier misses into hits.
+    FLIGHT_LOOKUP.clear()
 
     return {"message": "API keys updated successfully"}
 
