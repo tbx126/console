@@ -248,7 +248,7 @@ export default function MediaCarousel({ screenshots = [], movies = [] }) {
       {/* Media Type Badge */}
       {currentMedia.type === 'video' && (
         <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-violet-600 text-white text-xs font-medium">
-          Video
+          视频
         </div>
       )}
 

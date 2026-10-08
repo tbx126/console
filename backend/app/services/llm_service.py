@@ -100,16 +100,13 @@ class LLMService:
 - 不要用反引号 ` 包裹数学公式，必须用 $ 符号
 - 代码块使用 ```language 格式
 
-当用户在对话中提到可以记录的信息时（如消费、收入、航班、投资等），请在回复末尾附上 JSON 数据，格式如下：
+当用户在对话中提到可以记录的信息时（如航班），请在回复末尾附上 JSON 数据，格式如下：
 
 支持的类型：
-- expense: {"data_type": "expense", "data": {"category": "分类", "amount": 金额, "merchant": "商家", "date": "YYYY-MM-DD", "notes": "备注"}}
-- income: {"data_type": "income", "data": {"source": "来源", "amount": 金额, "date": "YYYY-MM-DD", "type": "类型"}}
 - flight: {"data_type": "flight", "data": {"airline": "航空公司", "flight_number": "航班号", "origin": "出发地", "destination": "目的地", "date": "YYYY-MM-DD", "travel_class": "舱位"}}
-- investment: {"data_type": "investment", "data": {"symbol": "代码", "quantity": 数量, "purchase_price": 价格, "date": "YYYY-MM-DD"}}
 
 注意：
-- 只有当用户明确提到具体的消费、收入、航班或投资信息时才附加 JSON
+- 只有当用户明确提到具体的航班信息时才附加 JSON
 - 普通聊天不需要附加任何 JSON
 - 先用自然语言回复，JSON 放在最后"""
 

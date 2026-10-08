@@ -6,13 +6,13 @@ import {
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import dataApi from '../../services/dataApi';
 
 const MODULE_LABELS = {
-  finance: '财务',
+  finance: '财务（已移除）',
   travel: '旅行',
-  portfolio: '投资',
+  portfolio: '资产',
   gaming: '游戏',
   config: '配置',
 };
@@ -56,7 +56,7 @@ const ModuleSnapshotGroup = ({ summary, onRefresh }) => {
       const data = await dataApi.getModuleSnapshots(summary.module);
       setSnapshots(data);
     } catch {
-      toast.error('Failed to load snapshots');
+      toast.error('快照加载失败');
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,7 @@ const ModuleSnapshotGroup = ({ summary, onRefresh }) => {
       toast.success(`${MODULE_LABELS[summary.module] || summary.module} restored`);
       onRefresh();
     } catch {
-      toast.error('Restore failed');
+      toast.error('恢复失败');
     }
   };
 
@@ -83,11 +83,11 @@ const ModuleSnapshotGroup = ({ summary, onRefresh }) => {
     if (!window.confirm('Delete this snapshot?')) return;
     try {
       await dataApi.deleteSnapshot(filename);
-      toast.success('Snapshot deleted');
+      toast.success('快照已删除');
       loadSnapshots();
       onRefresh();
     } catch {
-      toast.error('Delete failed');
+      toast.error('删除失败');
     }
   };
 
@@ -141,14 +141,14 @@ const ModuleSnapshotGroup = ({ summary, onRefresh }) => {
                 <button
                   onClick={() => handleRestore(snap.filename)}
                   className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                  title="Restore"
+                  title="恢复" aria-label="恢复"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => handleDelete(snap.filename)}
                   className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-                  title="Delete"
+                  title="删除" aria-label="删除"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -171,7 +171,7 @@ const ArchiveRow = ({ archive, onRefresh }) => {
       toast.success(result.message);
       onRefresh();
     } catch {
-      toast.error('Restore failed');
+      toast.error('恢复失败');
     }
   };
 
@@ -186,7 +186,7 @@ const ArchiveRow = ({ archive, onRefresh }) => {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Download failed');
+      toast.error('下载失败');
     }
   };
 
@@ -194,10 +194,10 @@ const ArchiveRow = ({ archive, onRefresh }) => {
     if (!window.confirm('Delete this archive?')) return;
     try {
       await dataApi.deleteArchive(archive.id);
-      toast.success('Archive deleted');
+      toast.success('归档已删除');
       onRefresh();
     } catch {
-      toast.error('Delete failed');
+      toast.error('删除失败');
     }
   };
 
@@ -232,21 +232,21 @@ const ArchiveRow = ({ archive, onRefresh }) => {
         <button
           onClick={handleRestore}
           className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-          title="Restore"
+          title="恢复" aria-label="恢复"
         >
           <RotateCcw className="h-3.5 w-3.5" />
         </button>
         <button
           onClick={handleDownload}
           className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-          title="Download"
+          title="下载" aria-label="下载"
         >
           <Download className="h-3.5 w-3.5" />
         </button>
         <button
           onClick={handleDelete}
           className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-          title="Delete"
+          title="删除" aria-label="删除"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
@@ -273,7 +273,7 @@ const DataManagementTab = () => {
       setOverview(ov);
       setArchives(ar);
     } catch {
-      toast.error('Failed to load data');
+      toast.error('数据加载失败');
     } finally {
       setLoading(false);
     }
@@ -285,11 +285,11 @@ const DataManagementTab = () => {
     setCreating(true);
     try {
       await dataApi.createArchive(archiveDesc);
-      toast.success('Archive created');
+      toast.success('归档已创建');
       setArchiveDesc('');
       loadData();
     } catch {
-      toast.error('Failed to create archive');
+      toast.error('归档创建失败');
     } finally {
       setCreating(false);
     }
@@ -304,10 +304,10 @@ const DataManagementTab = () => {
       if (!file) return;
       try {
         await dataApi.importArchive(file);
-        toast.success('Archive imported');
+        toast.success('归档已导入');
         loadData();
       } catch {
-        toast.error('Import failed: invalid file');
+        toast.error('导入失败：文件无效');
       }
     };
     input.click();
@@ -320,7 +320,7 @@ const DataManagementTab = () => {
       toast.success(`Deleted ${result.deleted_count} orphan backups`);
       loadData();
     } catch {
-      toast.error('Cleanup failed');
+      toast.error('清理失败');
     }
   };
 
@@ -358,7 +358,7 @@ const DataManagementTab = () => {
       <div>
         <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">
           <History className="h-4 w-4" />
-          Auto Snapshots
+          自动快照
         </h3>
         <div className="space-y-2">
           {overview?.modules.map((mod) => (
@@ -377,7 +377,7 @@ const DataManagementTab = () => {
               </p>
             </div>
             <Button variant="ghost" size="sm" onClick={handleCleanOrphans}>
-              Clean up
+              清理
             </Button>
           </div>
         )}
@@ -387,7 +387,7 @@ const DataManagementTab = () => {
       <div>
         <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">
           <Archive className="h-4 w-4" />
-          Manual Archives
+          手动归档
         </h3>
 
         {/* Create Archive */}
@@ -395,16 +395,16 @@ const DataManagementTab = () => {
           <Input
             value={archiveDesc}
             onChange={(e) => setArchiveDesc(e.target.value)}
-            placeholder="Archive description (optional)"
+            placeholder="归档说明（可选）"
             className="flex-1"
           />
           <Button onClick={handleCreateArchive} isLoading={creating} size="sm">
             <Plus className="h-4 w-4 mr-1" />
-            Create
+            创建
           </Button>
           <Button variant="outline" size="sm" onClick={handleImport}>
             <Upload className="h-4 w-4 mr-1" />
-            Import
+            导入
           </Button>
         </div>
 
@@ -412,7 +412,7 @@ const DataManagementTab = () => {
         <div className="space-y-2">
           {archives.length === 0 ? (
             <p className="text-center py-6 text-sm text-zinc-400">
-              No archives yet. Create one to save a full snapshot of all your data.
+              还没有归档。创建一个即可保存全部数据的完整快照。
             </p>
           ) : (
             archives.map((archive) => (

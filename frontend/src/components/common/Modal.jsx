@@ -1,22 +1,34 @@
+import { useEffect } from "react";
 import { X } from "lucide-react";
 
 const Modal = ({ isOpen, onClose, title, children }) => {
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (event) => { if (event.key === "Escape") onClose?.(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="relative bg-white dark:bg-zinc-800 rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-zinc-700">
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-zinc-700">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-zinc-100">{title}</h2>
+        role="dialog"
+        aria-modal="true"
+        aria-label={typeof title === "string" ? title : undefined}
+        className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-xl"
+      >
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <h2 className="text-lg font-semibold">{title}</h2>
           <button
+            type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors rounded-lg p-1 hover:bg-slate-100 dark:hover:bg-zinc-700"
+            aria-label="关闭"
+            className="grid size-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            <X className="h-5 w-5" />
+            <X className="size-5" />
           </button>
         </div>
         <div className="p-6">{children}</div>

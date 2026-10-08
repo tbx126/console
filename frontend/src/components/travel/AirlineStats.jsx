@@ -4,12 +4,12 @@ import travelApi from '../../services/travelApi';
 
 // 成就分类配置
 const CATEGORY_CONFIG = {
-  flights: { label: 'Flights', icon: Plane, color: 'violet' },
-  distance: { label: 'Distance', icon: Route, color: 'blue' },
-  airlines: { label: 'Airlines', icon: Building, color: 'emerald' },
-  countries: { label: 'Countries', icon: Globe, color: 'amber' },
-  continents: { label: 'Continents', icon: MapPin, color: 'rose' },
-  airports: { label: 'Airports', icon: Building, color: 'cyan' },
+  flights: { label: '航班', icon: Plane, color: 'violet' },
+  distance: { label: '里程', icon: Route, color: 'blue' },
+  airlines: { label: '航司', icon: Building, color: 'emerald' },
+  countries: { label: '国家/地区', icon: Globe, color: 'amber' },
+  continents: { label: '大洲', icon: MapPin, color: 'rose' },
+  airports: { label: '机场', icon: Building, color: 'cyan' },
 };
 
 const AirlineStats = () => {
@@ -135,7 +135,7 @@ const AirlineStats = () => {
         </div>
       ) : (
         <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
-          No airline statistics yet. Log flights to see stats!
+          还没有航司统计。记录航班后即可查看。
         </div>
       )}
     </div>

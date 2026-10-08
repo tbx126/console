@@ -7,7 +7,7 @@ import ModelSelector from '../components/ai/ModelSelector';
 import DataConfirmModal from '../components/ai/DataConfirmModal';
 import ParameterPanel from '../components/ai/ParameterPanel';
 import aiApi from '../services/aiApi';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const DEFAULT_SYSTEM_PROMPT = `你是一个友好的 AI 助手，可以和用户自然地聊天。
 
@@ -17,16 +17,13 @@ const DEFAULT_SYSTEM_PROMPT = `你是一个友好的 AI 助手，可以和用户
 - 不要用反引号 \` 包裹数学公式，必须用 $ 符号
 - 代码块使用 \`\`\`language 格式
 
-当用户在对话中提到可以记录的信息时（如消费、收入、航班、投资等），请在回复末尾附上 JSON 数据，格式如下：
+当用户在对话中提到可以记录的信息时（如航班），请在回复末尾附上 JSON 数据，格式如下：
 
 支持的类型：
-- expense: {"data_type": "expense", "data": {"category": "分类", "amount": 金额, "merchant": "商家", "date": "YYYY-MM-DD", "notes": "备注"}}
-- income: {"data_type": "income", "data": {"source": "来源", "amount": 金额, "date": "YYYY-MM-DD", "type": "类型"}}
 - flight: {"data_type": "flight", "data": {"airline": "航空公司", "flight_number": "航班号", "origin": "出发地", "destination": "目的地", "date": "YYYY-MM-DD", "travel_class": "舱位"}}
-- investment: {"data_type": "investment", "data": {"symbol": "代码", "quantity": 数量, "purchase_price": 价格, "date": "YYYY-MM-DD"}}
 
 注意：
-- 只有当用户明确提到具体的消费、收入、航班或投资信息时才附加 JSON
+- 只有当用户明确提到具体的航班信息时才附加 JSON
 - 普通聊天不需要附加任何 JSON
 - 先用自然语言回复，JSON 放在最后`;
 
@@ -124,7 +121,7 @@ const AIAssistantPage = () => {
       setCurrentConvId(newConv.id);
       setMessages([]);
     } catch {
-      toast.error('Failed to create conversation');
+      toast.error('创建对话失败');
     }
   };
 
@@ -150,7 +147,7 @@ const AIAssistantPage = () => {
         }
       }
     } catch {
-      toast.error('Failed to delete conversation');
+      toast.error('删除对话失败');
     }
   };
 
@@ -278,7 +275,7 @@ const AIAssistantPage = () => {
         console.error('Failed to parse response:', e);
       }
     } catch {
-      toast.error('Failed to send message');
+      toast.error('发送失败');
     } finally {
       setIsLoading(false);
     }
@@ -297,7 +294,7 @@ const AIAssistantPage = () => {
     if (currentConvId) {
       aiApi.updateConversation(currentConvId, { title: 'New Conversation', messages: [] });
     }
-    toast.success('Chat cleared');
+    toast.success('对话已清空');
   };
 
   const handleSelectConfig = async (configId) => {
@@ -306,9 +303,9 @@ const AIAssistantPage = () => {
       const newConfigs = configs.map(c => ({ ...c, is_default: c.id === configId }));
       setConfigs(newConfigs);
       setCurrentConfig(newConfigs.find(c => c.id === configId));
-      toast.success('Model switched');
+      toast.success('已切换模型');
     } catch {
-      toast.error('Failed to switch model');
+      toast.error('切换模型失败');
     }
   };
 
@@ -320,11 +317,11 @@ const AIAssistantPage = () => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image must be less than 5MB');
+        toast.error('图片需小于 5MB');
         return;
       }
       setSelectedImage(file);
-      toast.success('Image attached');
+      toast.success('已添加图片');
     }
   };
 
@@ -417,7 +414,7 @@ const AIAssistantPage = () => {
         );
       }
     } catch {
-      toast.error('Failed to regenerate');
+      toast.error('重新生成失败');
     } finally {
       setIsLoading(false);
     }
@@ -428,7 +425,7 @@ const AIAssistantPage = () => {
   }, []);
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex relative">
+    <div className="relative flex h-[calc(100dvh-3.5rem-4.25rem)] md:h-dvh">
       {/* Sidebar */}
       {sidebarOpen && (
         <ConversationSidebar
@@ -449,7 +446,8 @@ const AIAssistantPage = () => {
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl transition-colors"
-                title={sidebarOpen ? 'Hide conversations' : 'Show conversations'}
+                title={sidebarOpen ? '隐藏对话列表' : '显示对话列表'}
+                aria-label={sidebarOpen ? '隐藏对话列表' : '显示对话列表'}
               >
                 {sidebarOpen ? (
                   <PanelLeftClose className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
@@ -479,7 +477,8 @@ const AIAssistantPage = () => {
               <button
                 onClick={() => setParamPanelOpen(!paramPanelOpen)}
                 className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl transition-colors"
-                title={paramPanelOpen ? 'Hide parameters' : 'Show parameters'}
+                title={paramPanelOpen ? '隐藏参数' : '显示参数'}
+                aria-label={paramPanelOpen ? '隐藏参数' : '显示参数'}
               >
                 {paramPanelOpen ? (
                   <PanelRightClose className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
@@ -536,7 +535,7 @@ const AIAssistantPage = () => {
                     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
                   }}
                   onKeyPress={handleKeyPress}
-                  placeholder={selectedImage ? "Describe what you want to know..." : "Message AI Assistant..."}
+                  placeholder={selectedImage ? "描述你想了解的内容…" : "给 AI 助手发消息…"}
                   className="w-full px-4 py-3 pr-12 border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
                   rows={1}
                   style={{ minHeight: '52px', maxHeight: '120px' }}
@@ -556,7 +555,7 @@ const AIAssistantPage = () => {
                         ? 'text-violet-600 bg-violet-100'
                         : 'text-zinc-400 hover:text-violet-600 hover:bg-violet-50'
                     }`}
-                    title="Upload image"
+                    title="上传图片" aria-label="上传图片"
                   >
                     <Image className="h-5 w-5" />
                   </button>

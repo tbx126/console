@@ -1,243 +1,203 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Wallet, Plane, Briefcase, TrendingUp, ArrowRight } from 'lucide-react';
-import { StatCard } from '../components/ui/StatCard';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { ArrowRight, Bot, ChartPie, Gamepad2, Plane, RefreshCw } from 'lucide-react';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Card } from '../components/ui/Card';
 import { Skeleton } from '../components/ui/Skeleton';
-import financeApi from '../services/financeApi';
 import travelApi from '../services/travelApi';
-import portfolioApi from '../services/portfolioApi';
-import { getCurrencySymbol, convertAmount as convertCurrency } from '../lib/currency';
+import gamingApi from '../services/gamingApi';
+import { loadPortfolioSummary } from '../features/portfolio/lib/summary';
+import { categoryMeta, money } from '../features/portfolio/lib/portfolio';
+
+const number = new Intl.NumberFormat('zh-CN');
+
+function MetricCard({ to, label, value, caption, loading }) {
+  const body = (
+    <>
+      <span className="text-[13px] text-muted-foreground">{label}</span>
+      {loading ? (
+        <Skeleton className="h-9 w-40" />
+      ) : (
+        <strong className="tabular text-[28px] font-semibold leading-tight tracking-tight">{value}</strong>
+      )}
+      <span className="text-xs text-muted-foreground">{caption}</span>
+    </>
+  );
+  const className = 'flex min-w-0 flex-col gap-2.5 rounded-xl border border-border bg-card px-6 py-5 text-foreground';
+  return to ? (
+    <Link to={to} className={`${className} transition-colors hover:border-ring`}>
+      {body}
+    </Link>
+  ) : (
+    <div className={className}>{body}</div>
+  );
+}
+
+const modules = [
+  { to: '/portfolio', icon: ChartPie, title: '资产', text: '现金、股票、基金、黄金与加密货币的当前市值' },
+  { to: '/travel', icon: Plane, title: '旅行足迹', text: '航班记录、航线地图与航司统计' },
+  { to: '/gaming', icon: Gamepad2, title: '游戏库', text: 'Steam 同步、游玩时长与成就' },
+  { to: '/ai-assistant', icon: Bot, title: 'AI 助手', text: '用自然语言记录航班、提问与分析' },
+];
 
 const Dashboard = () => {
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    finance: null,
-    travel: null,
-    portfolio: null,
-  });
-  const displayCurrency = 'CNY'; // Fixed to CNY
-  const [exchangeRates, setExchangeRates] = useState(null);
+  const [portfolio, setPortfolio] = useState({ loading: true, data: null, error: false });
+  const [travel, setTravel] = useState(null);
+  const [gaming, setGaming] = useState(null);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [financeStats, travelStats, portfolioStats, ratesData] = await Promise.all([
-          financeApi.getStatistics(),
-          travelApi.getStatistics(),
-          portfolioApi.getStatistics(),
-          financeApi.getExchangeRates('USD'),
-        ]);
+    const controller = new AbortController();
+    loadPortfolioSummary(controller.signal)
+      .then((data) => setPortfolio({ loading: false, data, error: false }))
+      .catch(() => { if (!controller.signal.aborted) setPortfolio({ loading: false, data: null, error: true }); });
+    travelApi.getStatistics().then(setTravel).catch(() => setTravel(false));
+    gamingApi.getStatistics().then((r) => setGaming(r.data)).catch(() => setGaming(false));
+    return () => controller.abort();
+  }, [reload]);
 
-        setStats({
-          finance: financeStats,
-          travel: travelStats,
-          portfolio: portfolioStats,
-        });
-        setExchangeRates(ratesData.rates);
-      } catch (error) {
-        console.error('Failed to fetch dashboard stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  const convertAmount = (amount, fromCurrency = 'USD') =>
-    convertCurrency(amount, fromCurrency, displayCurrency, exchangeRates);
-
-  const currencySymbol = getCurrencySymbol(displayCurrency);
-
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <Skeleton className="h-10 w-48 mb-8" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-        </div>
-      </div>
-    );
-  }
+  const summary = portfolio.data;
+  const total = summary?.total ?? 0;
+  const portfolioValue = portfolio.error ? '暂不可用' : summary?.empty ? '尚无持仓' : money(total, summary?.currency ?? 'SGD', 0);
+  const portfolioCaption = portfolio.error
+    ? '无法连接资产数据'
+    : summary?.empty
+      ? '前往资产页添加或导入'
+      : `${summary?.assetCount ?? 0} 项资产${summary?.missing ? ` · ${summary.missing} 项待估值` : ''}`;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8 animate-in">
-        <div>
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Dashboard</h1>
-          <p className="text-zinc-600 dark:text-zinc-400 mt-2">Welcome back! Here's your overview.</p>
-        </div>
-      </div>
+    <div className="page">
+      <PageHeader
+        eyebrow="Personal Life Console"
+        title="总览"
+        description="资产、旅行与游戏，在一处查看。"
+        actions={
+          <button
+            type="button"
+            onClick={() => {
+              setPortfolio((p) => ({ ...p, loading: true }));
+              setTravel(null);
+              setGaming(null);
+              setReload((n) => n + 1);
+            }}
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-sm font-medium hover:bg-muted"
+          >
+            <RefreshCw className="size-4" aria-hidden="true" />
+            刷新
+          </button>
+        }
+      />
 
-      {/* Stats & Actions Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="md:col-span-2 animate-in animate-delay-100 bg-white dark:bg-zinc-800 rounded-2xl shadow-air p-6 hover:shadow-air-hover transition-shadow duration-300">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Total Expenses</p>
-              <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
-                {currencySymbol}{convertAmount(stats.finance?.total_expenses || 0).toFixed(2)}
-              </p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">This month</p>
-            </div>
-            <div className="ml-4 p-3 bg-violet-50 dark:bg-violet-900/30 rounded-xl">
-              <Wallet className="h-6 w-6 text-violet-600 dark:text-violet-400" />
-            </div>
+      <section aria-label="关键指标" className="mb-5 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
+        <MetricCard
+          to="/portfolio"
+          label={`总资产 · ${summary?.currency ?? 'SGD'}`}
+          value={portfolioValue}
+          caption={portfolioCaption}
+          loading={portfolio.loading}
+        />
+        <MetricCard
+          to="/travel"
+          label="累计飞行"
+          value={travel ? `${number.format(travel.total_flights)} 段` : '—'}
+          caption={travel ? `${number.format(Math.round(travel.total_km))} km · 今年 ${travel.this_year_flights} 段` : '暂无航班数据'}
+          loading={travel === null}
+        />
+        <MetricCard
+          to="/gaming"
+          label="游戏库"
+          value={gaming ? `${number.format(gaming.total_games)} 款` : '—'}
+          caption={gaming ? `近两周游玩 ${Math.round((gaming.recent_playtime ?? 0) / 60)} 小时` : '暂无游戏数据'}
+          loading={gaming === null}
+        />
+      </section>
+
+      <section className="mb-5 grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-5">
+        <Card className="px-6 py-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[17px] font-semibold">资产分布</h2>
+            <Link to="/portfolio" className="text-[13px] font-medium text-accent-foreground hover:underline">
+              查看资产 →
+            </Link>
           </div>
-
-          {/* Category breakdown */}
-          {stats.finance?.expenses_by_category && Object.keys(stats.finance.expenses_by_category).length > 0 && (
-            <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-700">
-              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-3">Top Categories</p>
-              <div className="grid grid-cols-3 gap-3">
-                {Object.entries(stats.finance.expenses_by_category)
-                  .sort(([, a], [, b]) => b - a)
-                  .slice(0, 3)
-                  .map(([category, amount]) => (
-                    <div key={category} className="bg-zinc-50 dark:bg-zinc-700/50 rounded-lg p-2">
-                      <p className="text-xs text-zinc-600 dark:text-zinc-400 capitalize truncate">{category}</p>
-                      <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
-                        {currencySymbol}{convertAmount(amount).toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
+          {portfolio.loading ? (
+            <Skeleton className="mt-6 h-24" />
+          ) : summary && !summary.empty && total > 0 ? (
+            <>
+              <div className="mb-5 mt-6 flex h-2.5 gap-0.5 overflow-hidden rounded-md" aria-hidden="true">
+                {summary.byCategory.filter((c) => c.value > 0).map((c) => (
+                  <i key={c.category} style={{ flex: c.value, background: categoryMeta[c.category].color }} />
+                ))}
               </div>
-            </div>
+              <ul className="grid grid-cols-2 gap-x-7 gap-y-3 text-sm">
+                {summary.byCategory.map((c) => (
+                  <li key={c.category} className="flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-2.5">
+                      <i className="size-2 rounded-[3px]" style={{ background: categoryMeta[c.category].color }} />
+                      {categoryMeta[c.category].name}
+                    </span>
+                    <strong className="tabular font-medium">{((c.value / total) * 100).toFixed(1)}%</strong>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="mt-6 text-sm text-muted-foreground">
+              {portfolio.error ? '资产数据暂不可用，请稍后刷新。' : '还没有可估值的持仓。'}
+            </p>
           )}
-        </div>
+        </Card>
 
-        <StatCard
-          className="animate-in animate-delay-200"
-          title="Flights Logged"
-          value={stats.travel?.total_flights || 0}
-          description="Total journeys"
-          icon={Plane}
-        />
-
-        <StatCard
-          className="animate-in animate-delay-300"
-          title="Portfolio Value"
-          value={`${currencySymbol}${convertAmount(stats.portfolio?.total_value || 0).toFixed(2)}`}
-          description="Current investments"
-          icon={Briefcase}
-          trend={
-            stats.portfolio?.total_gain_loss
-              ? {
-                  value: `${stats.portfolio.total_gain_loss >= 0 ? '+' : ''}${currencySymbol}${convertAmount(stats.portfolio.total_gain_loss).toFixed(2)}`,
-                  isPositive: stats.portfolio.total_gain_loss >= 0,
-                }
-              : null
-          }
-        />
-
-        {/* Quick Actions */}
-        <Card className="md:col-span-2 animate-in animate-delay-400 bg-gradient-to-br from-violet-50/50 to-zinc-50/50 dark:from-violet-900/20 dark:to-zinc-800/50 border-violet-100/50 dark:border-violet-800/50">
-        <CardHeader>
-          <CardTitle className="text-violet-900 dark:text-violet-300">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Link to="/finance">
-              <Button variant="outline" className="w-full justify-between h-12 border-violet-200 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:border-violet-300 dark:hover:border-violet-600 transition-all">
-                <span className="flex items-center gap-2">
-                  <Wallet className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-                  Add Expense
-                </span>
-                <ArrowRight className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-              </Button>
-            </Link>
-            <Link to="/travel">
-              <Button variant="outline" className="w-full justify-between h-12 border-violet-200 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:border-violet-300 dark:hover:border-violet-600 transition-all">
-                <span className="flex items-center gap-2">
-                  <Plane className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-                  Log Flight
-                </span>
-                <ArrowRight className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-              </Button>
-            </Link>
-            <Link to="/portfolio">
-              <Button variant="outline" className="w-full justify-between h-12 border-violet-200 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:border-violet-300 dark:hover:border-violet-600 transition-all">
-                <span className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-                  Add Investment
-                </span>
-                <ArrowRight className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-              </Button>
+        <Card className="px-6 py-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[17px] font-semibold">旅行</h2>
+            <Link to="/travel" className="text-[13px] font-medium text-accent-foreground hover:underline">
+              全部航班 →
             </Link>
           </div>
-        </CardContent>
-      </Card>
-      </div>
-
-      {/* Section Header */}
-      <div className="mt-12 mb-6">
-        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Modules</h2>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Explore your tracking modules</p>
-      </div>
-
-      {/* Module Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Wallet className="h-5 w-5 text-violet-600" />
-              <span>Finance</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-zinc-600 dark:text-zinc-400 text-sm mb-4">
-              Track your expenses, income, and budgets
-            </p>
-            <Link to="/finance">
-              <Button variant="ghost" size="sm" className="w-full">
-                View Details
-              </Button>
-            </Link>
-          </CardContent>
+          {travel ? (
+            <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
+              {[
+                ['到访城市', travel.cities_visited],
+                ['到访机场', travel.airports_visited],
+                ['乘坐航司', travel.airlines_used],
+                ['最常乘坐', travel.favorite_airline || '—'],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-xs text-muted-foreground">{label}</dt>
+                  <dd className="tabular mt-1 truncate text-lg font-semibold">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : travel === null ? (
+            <Skeleton className="mt-6 h-24" />
+          ) : (
+            <p className="mt-6 text-sm text-muted-foreground">旅行数据暂不可用。</p>
+          )}
         </Card>
+      </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Plane className="h-5 w-5 text-violet-600" />
-              <span>Travel</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-zinc-600 dark:text-zinc-400 text-sm mb-4">
-              Log your flights and track travel statistics
-            </p>
-            <Link to="/travel">
-              <Button variant="ghost" size="sm" className="w-full">
-                View Details
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Briefcase className="h-5 w-5 text-violet-600" />
-              <span>Portfolio</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-zinc-600 dark:text-zinc-400 text-sm mb-4">
-              Manage your investments and projects
-            </p>
-            <Link to="/portfolio">
-              <Button variant="ghost" size="sm" className="w-full">
-                View Details
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+      <section aria-label="模块" className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
+        {modules.map(({ to, icon, title, text }) => {
+          const Icon = icon;
+          return (
+          <Link
+            key={to}
+            to={to}
+            className="group flex min-w-0 flex-col gap-2.5 rounded-xl border border-border bg-card p-5 text-foreground transition-colors hover:border-ring"
+          >
+            <span className="grid size-9 place-items-center rounded-[9px] bg-accent text-accent-foreground">
+              <Icon className="size-[18px]" aria-hidden="true" />
+            </span>
+            <strong className="flex items-center justify-between text-[15px] font-semibold">
+              {title}
+              <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+            </strong>
+            <span className="text-[13px] text-muted-foreground">{text}</span>
+          </Link>
+          );
+        })}
+      </section>
     </div>
   );
 };

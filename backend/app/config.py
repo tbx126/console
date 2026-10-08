@@ -19,7 +19,6 @@ class Settings(BaseSettings):
     data_dir: Path = Path(__file__).parent.parent / "data"
     travel_data_file: str = "travel.json"
     portfolio_data_file: str = "portfolio.json"
-    finance_data_file: str = "finance.json"
     gaming_data_file: str = "gaming.json"
     config_data_file: str = "config.json"
 
@@ -39,6 +38,6 @@ class Settings(BaseSettings):
 
     # Archive settings
     archive_dir: Path = Path(__file__).parent.parent / "data" / "archives"
-    data_modules: list = ["finance", "travel", "portfolio", "gaming", "config"]
+    data_modules: list = ["travel", "portfolio", "gaming", "config"]
 
 settings = Settings()

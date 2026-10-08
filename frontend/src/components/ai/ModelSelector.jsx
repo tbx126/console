@@ -77,7 +77,7 @@ const ModelSelector = ({ configs, currentConfig, onSelect }) => {
       >
         <Cpu className="h-4 w-4 text-violet-600" />
         <span className="text-zinc-700 dark:text-zinc-200 font-medium">
-          {activeConfig?.name || 'Select Model'}
+          {activeConfig?.name || '选择模型'}
         </span>
         <span className="text-xs text-zinc-500 dark:text-zinc-400">
           {currentConfig?.model}
@@ -90,12 +90,12 @@ const ModelSelector = ({ configs, currentConfig, onSelect }) => {
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full left-0 mt-2 w-80 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-700 py-2 z-20 animate-in fade-in slide-in-from-top-2 duration-200 max-h-96 overflow-y-auto">
             <div className="px-3 py-1.5 text-xs text-zinc-500 uppercase tracking-wider">
-              Configurations
+              模型配置
             </div>
             {configs.length === 0 ? (
               <div className="px-3 py-4 text-sm text-zinc-500 text-center">
                 <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No saved configs</p>
+                <p>暂无已保存配置</p>
                 <p className="text-xs mt-1">Add one in Settings</p>
               </div>
             ) : (

@@ -1,166 +1,121 @@
-from fastapi import APIRouter, HTTPException
-from typing import List
-from datetime import datetime
-import asyncio
-from app.models.portfolio import Investment, Experience, PortfolioStatistics
-from app.services.portfolio_service import portfolio_service
-from app.services.price_service import price_service
+"""Portfolio (folio) API: shared holdings, quotes, FX and instrument search."""
+import json
+import logging
+import re
+
+from fastapi import APIRouter, Query, Request
+from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
+
+from app.models.portfolio import CATEGORIES, AppendSnapshotRequest, SavePortfolioRequest, dump_shared
+from app.services.instrument_search import instrument_search
+from app.services.market_service import MarketError, market_service
+from app.services.portfolio_store import RevisionConflict, portfolio_store
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+MAX_BODY_BYTES = 1024 * 1024
+NO_STORE = {"Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff"}
+SYMBOL = re.compile(r"^[A-Z0-9][A-Z0-9.^=-]{0,23}$")
 
 
-# Investment endpoints
-@router.get("/investments", response_model=List[Investment])
-async def get_investments():
-    """Get all investments"""
-    return portfolio_service.get_investments()
+def _json(data, status: int = 200, headers: dict | None = None) -> JSONResponse:
+    return JSONResponse(data, status_code=status, headers=headers or NO_STORE)
 
 
-@router.get("/investments/{investment_id}", response_model=Investment)
-async def get_investment(investment_id: str):
-    """Get investment by ID"""
-    investment = portfolio_service.get_investment(investment_id)
-    if not investment:
-        raise HTTPException(status_code=404, detail="Investment not found")
-    return investment
+def _error(message: str, status: int) -> JSONResponse:
+    return _json({"error": message}, status)
 
 
-@router.post("/investments", response_model=Investment)
-async def create_investment(investment: Investment):
-    """Create new investment"""
-    return portfolio_service.create_investment(investment)
+def _same_site_json(request: Request) -> bool:
+    """Writes must be JSON from this site; blocks simple cross-site form posts."""
+    content_type = request.headers.get("content-type", "").split(";")[0].strip()
+    return content_type == "application/json" and request.headers.get("sec-fetch-site") != "cross-site"
 
 
-@router.put("/investments/{investment_id}", response_model=Investment)
-async def update_investment(investment_id: str, investment: Investment):
-    """Update investment"""
-    updated = portfolio_service.update_investment(investment_id, investment)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Investment not found")
-    return updated
+async def _body(request: Request):
+    if int(request.headers.get("content-length") or 0) > MAX_BODY_BYTES:
+        raise OverflowError()
+    raw = b""
+    async for chunk in request.stream():
+        raw += chunk
+        if len(raw) > MAX_BODY_BYTES:
+            raise OverflowError()
+    return json.loads(raw)
 
 
-@router.delete("/investments/{investment_id}")
-async def delete_investment(investment_id: str):
-    """Delete investment"""
-    success = portfolio_service.delete_investment(investment_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Investment not found")
-    return {"message": "Investment deleted successfully"}
+@router.get("")
+async def read_portfolio():
+    try:
+        shared = await run_in_threadpool(portfolio_store.read)
+    except (OSError, ValueError, ValidationError):
+        logger.exception("Portfolio file is unreadable")
+        return _error("NAS 数据暂不可读，未覆盖已保存文件", 503)
+    return _json(dump_shared(shared))
 
 
-# Experience endpoints
-@router.get("/experience", response_model=List[Experience])
-async def get_experiences():
-    """Get all professional experiences"""
-    return portfolio_service.get_experiences()
-
-
-@router.post("/experience", response_model=Experience)
-async def create_experience(experience: Experience):
-    """Create new experience"""
-    return portfolio_service.create_experience(experience)
-
-
-@router.put("/experience/{experience_id}", response_model=Experience)
-async def update_experience(experience_id: str, experience: Experience):
-    """Update experience"""
-    updated = portfolio_service.update_experience(experience_id, experience)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Experience not found")
-    return updated
-
-
-@router.delete("/experience/{experience_id}")
-async def delete_experience(experience_id: str):
-    """Delete experience"""
-    success = portfolio_service.delete_experience(experience_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Experience not found")
-    return {"message": "Experience deleted successfully"}
-
-
-# Statistics endpoint
-@router.get("/statistics", response_model=PortfolioStatistics)
-async def get_statistics():
-    """Get portfolio statistics"""
-    return await portfolio_service.get_statistics()
-
-
-# Price endpoints
-@router.get("/prices/{symbol}")
-async def get_price(symbol: str, asset_type: str = "stock"):
-    """Get real-time price for a symbol"""
-    price_data = await price_service.get_price(symbol, asset_type)
-    if not price_data:
-        raise HTTPException(status_code=404, detail="Price not found")
-    return price_data
-
-
-@router.post("/investments/refresh-all-prices")
-async def refresh_all_prices():
-    """Refresh prices for all investments with symbols"""
-    investments = portfolio_service.get_investments()
-
-    # Filter investments that need price updates
-    investments_to_update = [
-        inv for inv in investments
-        if inv.symbol and inv.type in ("stock", "crypto")
-    ]
-
-    if not investments_to_update:
-        return {"updated": [], "failed": []}
-
-    # Fetch all prices in parallel
-    tasks = [
-        price_service.get_price(inv.symbol, inv.type)
-        for inv in investments_to_update
-    ]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-    updated = []
-    failed = []
-    price_updates = {}
-    updated_at = datetime.now().isoformat()
-
-    # Process results
-    for inv, result in zip(investments_to_update, results):
-        if isinstance(result, Exception) or not result:
-            failed.append(inv.name)
+async def _mutate(request: Request, snapshot: bool) -> JSONResponse:
+    if not _same_site_json(request):
+        return _error("仅接受本站 JSON 请求", 403)
+    try:
+        payload = await _body(request)
+    except OverflowError:
+        return _error("文件不能超过 1 MB", 413)
+    except ValueError:
+        return _error("JSON 无效", 400)
+    try:
+        if snapshot:
+            data = AppendSnapshotRequest.model_validate(payload)
+            result = await run_in_threadpool(portfolio_store.append, data.revision, data.snapshot)
         else:
-            price_updates[inv.id] = {
-                "current_price": result["price"],
-                "currency": result.get("currency", "USD"),
-                "last_price_update": updated_at,
-            }
-            updated.append(inv.name)
+            data = SavePortfolioRequest.model_validate(payload)
+            result = await run_in_threadpool(portfolio_store.save, data.revision, data.portfolio)
+    except ValidationError:
+        return _error("快照格式无效" if snapshot else "持仓格式无效", 400)
+    except RevisionConflict:
+        return _error("另一设备已修改持仓，请同步最新数据后再保存", 409)
+    except (OSError, ValueError):
+        logger.exception("Portfolio save failed")
+        return _error("NAS 保存失败，已保留原数据", 503)
+    return _json(dump_shared(result))
 
-    portfolio_service.update_investment_prices(price_updates)
 
-    return {"updated": updated, "failed": failed}
+@router.put("")
+async def save_portfolio(request: Request):
+    return await _mutate(request, snapshot=False)
 
 
-@router.post("/investments/{investment_id}/refresh-price")
-async def refresh_investment_price(investment_id: str):
-    """Refresh price for a specific investment"""
-    investment = portfolio_service.get_investment(investment_id)
-    if not investment:
-        raise HTTPException(status_code=404, detail="Investment not found")
+@router.post("")
+async def append_snapshot(request: Request):
+    return await _mutate(request, snapshot=True)
 
-    if not investment.symbol:
-        raise HTTPException(status_code=400, detail="Investment has no symbol")
 
-    price_data = await price_service.get_price(investment.symbol, investment.type)
-    if not price_data:
-        raise HTTPException(status_code=404, detail="Could not fetch price")
+@router.get("/quote")
+async def get_quote(symbol: str = Query("", max_length=24)):
+    if not SYMBOL.match(symbol):
+        return _error("无效代码", 400)
+    try:
+        data = await market_service.quote(symbol)
+    except MarketError:
+        return _error("暂时无法获取报价，请核对代码或稍后刷新", 502)
+    return _json(data, headers={"Cache-Control": "private, max-age=60"})
 
-    investment.current_price = price_data["price"]
-    investment.currency = price_data.get("currency", "USD")
-    investment.last_price_update = datetime.now().isoformat()
-    updated = portfolio_service.update_investment(investment_id, investment)
 
-    return {
-        "investment_id": investment_id,
-        "new_price": price_data["price"],
-        "updated_at": investment.last_price_update
-    }
+@router.get("/fx")
+async def get_fx():
+    try:
+        data = await market_service.fx()
+    except MarketError:
+        return _error("汇率暂不可用", 502)
+    return _json(data, headers={"Cache-Control": "private, max-age=3600"})
+
+
+@router.get("/search")
+async def search(category: str = "", q: str = ""):
+    query = q.strip()
+    if category not in CATEGORIES or len(query) > 80 or re.search(r"[\x00-\x1F]", query):
+        return _error("无效搜索条件", 400)
+    result = await instrument_search.search(category, query)
+    return _json(result, headers={"Cache-Control": "private, max-age=30"})

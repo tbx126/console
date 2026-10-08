@@ -12,14 +12,10 @@ from app.models.ai_assistant import (
     Conversation,
     VisionRequest
 )
-from app.models.finance import Expense, Income
 from app.models.travel import Flight
-from app.models.portfolio import Investment
 from app.services.llm_service import llm_service
 from app.services.data_manager import data_manager
-from app.services.finance_service import finance_service
 from app.services.travel_service import travel_service
-from app.services.portfolio_service import portfolio_service
 from app.config import settings
 
 router = APIRouter()
@@ -63,13 +59,7 @@ async def chat(request: ChatRequest):
                 data_type = parsed_data.data_type
                 data = parsed_data.data
 
-                if data_type == "expense":
-                    finance_service.create_expense(Expense(**data))
-                    submission_result = {"success": True, "message": "Expense added successfully!"}
-                elif data_type == "income":
-                    finance_service.create_income(Income(**data))
-                    submission_result = {"success": True, "message": "Income added successfully!"}
-                elif data_type == "flight":
+                if data_type == "flight":
                     # 字段名映射：兼容旧字段名，处理None值
                     flight_data = {
                         "airline": data.get("airline") or data.get("flight_number", "Unknown Airline"),
@@ -82,9 +72,6 @@ async def chat(request: ChatRequest):
                     }
                     travel_service.create_flight(Flight(**flight_data))
                     submission_result = {"success": True, "message": "Flight added successfully!"}
-                elif data_type == "investment":
-                    portfolio_service.create_investment(Investment(**data))
-                    submission_result = {"success": True, "message": "Investment added successfully!"}
                 else:
                     submission_result = {"success": False, "message": f"Unknown data type: {data_type}"}
             except Exception as submit_error:
@@ -162,20 +149,7 @@ async def submit_data(request: dict):
         raise HTTPException(status_code=400, detail="Missing data_type or data")
 
     try:
-        if data_type == "expense":
-            expense_data = {
-                "amount": data.get("amount"),
-                "category": data.get("category") or "other",
-                "merchant": data.get("merchant") or "",
-                "date": data.get("date") or "",
-                "notes": data.get("notes"),
-            }
-            finance_service.create_expense(Expense(**expense_data))
-            return {"success": True, "message": "支出已记录"}
-        elif data_type == "income":
-            finance_service.create_income(Income(**data))
-            return {"success": True, "message": "收入已记录"}
-        elif data_type == "flight":
+        if data_type == "flight":
             flight_data = {
                 "airline": data.get("airline") or "Unknown",
                 "flight_number": data.get("flight_number") or "UNKNOWN",
@@ -187,9 +161,6 @@ async def submit_data(request: dict):
             }
             travel_service.create_flight(Flight(**flight_data))
             return {"success": True, "message": "航班已记录"}
-        elif data_type == "investment":
-            portfolio_service.create_investment(Investment(**data))
-            return {"success": True, "message": "投资已记录"}
         else:
             return {"success": False, "message": f"未知数据类型: {data_type}"}
     except Exception as e:

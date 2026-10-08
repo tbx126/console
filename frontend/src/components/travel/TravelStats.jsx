@@ -57,39 +57,39 @@ export default function TravelStats({ refresh }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in duration-300">
       <StatCard
-        title="Total Flights"
+        title="航班总数"
         value={totalFlights}
-        description="All time"
+        description="全部记录"
         icon={Plane}
       />
       <StatCard
-        title="Total Distance"
+        title="总里程"
         value={`${totalKm.toLocaleString()} km`}
-        description="KM flown"
+        description="飞行公里数"
         icon={MapPin}
       />
       <StatCard
-        title="Total Spent"
+        title="总花费"
         value={`$${totalCost.toLocaleString()}`}
-        description="On flights"
+        description="机票支出"
         icon={DollarSign}
       />
       <StatCard
-        title="Airlines"
+        title="航司"
         value={uniqueAirlines}
-        description="Different carriers"
+        description="不同航司"
         icon={Award}
       />
       <StatCard
-        title="Cities"
+        title="城市"
         value={citiesVisited}
-        description="Visited"
+        description="已到访"
         icon={Building2}
       />
       <StatCard
-        title="Airports"
+        title="机场"
         value={airportsVisited}
-        description="Visited"
+        description="已到访"
         icon={MapPin}
       />
     </div>

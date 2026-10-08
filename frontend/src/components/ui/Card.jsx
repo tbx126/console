@@ -3,11 +3,7 @@ import { cn } from "../../lib/utils";
 export function Card({ className, children, ...props }) {
   return (
     <div
-      className={cn(
-        "bg-white dark:bg-zinc-800 rounded-2xl shadow-air border border-transparent dark:border-zinc-700 text-zinc-950 dark:text-zinc-100",
-        "hover:shadow-air-hover transition-shadow duration-300",
-        className
-      )}
+      className={cn("min-w-0 rounded-xl border border-border bg-card text-card-foreground", className)}
       {...props}
     >
       {children}
@@ -17,7 +13,7 @@ export function Card({ className, children, ...props }) {
 
 export function CardHeader({ className, children, ...props }) {
   return (
-    <div className={cn("flex flex-col space-y-1.5 p-6", className)} {...props}>
+    <div className={cn("flex flex-col gap-1.5 px-6 pb-4 pt-6", className)} {...props}>
       {children}
     </div>
   );
@@ -25,18 +21,23 @@ export function CardHeader({ className, children, ...props }) {
 
 export function CardTitle({ className, children, ...props }) {
   return (
-    <h3
-      className={cn("font-semibold leading-none tracking-tight text-lg", className)}
-      {...props}
-    >
+    <h3 className={cn("text-[17px] font-semibold leading-tight", className)} {...props}>
       {children}
     </h3>
   );
 }
 
+export function CardDescription({ className, children, ...props }) {
+  return (
+    <p className={cn("text-[13px] text-muted-foreground", className)} {...props}>
+      {children}
+    </p>
+  );
+}
+
 export function CardContent({ className, children, ...props }) {
   return (
-    <div className={cn("p-6 pt-0", className)} {...props}>
+    <div className={cn("px-6 pb-6", className)} {...props}>
       {children}
     </div>
   );
@@ -44,7 +45,7 @@ export function CardContent({ className, children, ...props }) {
 
 export function CardFooter({ className, children, ...props }) {
   return (
-    <div className={cn("flex items-center p-6 pt-0", className)} {...props}>
+    <div className={cn("flex items-center px-6 pb-6", className)} {...props}>
       {children}
     </div>
   );

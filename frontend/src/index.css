@@ -1,16 +1,238 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "./styles/shadcn-tailwind-4.13.0.css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * 统一设计令牌（源自 folio）。所有模块共用：
+ * - 语义色：bg-background / bg-card / text-muted-foreground / bg-primary …
+ * - 旧模块中的 zinc/slate/gray 与 violet/indigo/purple 色阶被映射到同一套冷灰与靛蓝，
+ *   因此未逐个改写的页面也保持一致的视觉。
+ */
+:root {
+  --background: #f7f8fc;
+  --foreground: #22263b;
+  --card: #ffffff;
+  --card-foreground: #22263b;
+  --popover: #ffffff;
+  --popover-foreground: #22263b;
+  --primary: #555ce4;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f1f9;
+  --secondary-foreground: #333751;
+  --muted: #f4f5fa;
+  --muted-foreground: #5f6880;
+  --accent: #eff0fc;
+  --accent-foreground: #454ac5;
+  --border: #e8eaf2;
+  --input: #e3e6ef;
+  --ring: #777bea;
+  --destructive: #c84444;
+  --radius: 0.75rem;
+  --sidebar-width: 232px;
+}
+
+.dark {
+  --background: #10131d;
+  --foreground: #e7eaf7;
+  --card: #191e2c;
+  --card-foreground: #e7eaf7;
+  --popover: #202638;
+  --popover-foreground: #e7eaf7;
+  --primary: #8c91ff;
+  --primary-foreground: #121629;
+  --secondary: #242b3e;
+  --secondary-foreground: #e7eaf7;
+  --muted: #202637;
+  --muted-foreground: #a2aac0;
+  --accent: #2b3053;
+  --accent-foreground: #babdff;
+  --border: #2b3246;
+  --input: #384056;
+  --ring: #8c91ff;
+  --destructive: #e06a6a;
+}
+
+@theme inline {
+  --font-sans: "Geist", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: 0.8125rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+
+  --shadow-air: 0 1px 2px rgb(34 38 59 / 0.04);
+  --shadow-air-hover: 0 6px 20px -6px rgb(34 38 59 / 0.12);
+
+  --animate-in: fade-in-up 0.4s ease-out forwards;
+  @keyframes fade-in-up {
+    0% { opacity: 0; transform: translateY(6px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+}
+
+@theme {
+  /* 冷灰（folio）——替换 zinc / slate / gray */
+  --color-zinc-50: #f7f8fc;
+  --color-zinc-100: #f0f1f9;
+  --color-zinc-200: #e8eaf2;
+  --color-zinc-300: #d5d8e4;
+  --color-zinc-400: #a2aac0;
+  --color-zinc-500: #687189;
+  --color-zinc-600: #4f5770;
+  --color-zinc-700: #2b3246;
+  --color-zinc-800: #191e2c;
+  --color-zinc-900: #10131d;
+  --color-zinc-950: #0b0d14;
+
+  --color-slate-50: #f7f8fc;
+  --color-slate-100: #f0f1f9;
+  --color-slate-200: #e8eaf2;
+  --color-slate-300: #d5d8e4;
+  --color-slate-400: #a2aac0;
+  --color-slate-500: #687189;
+  --color-slate-600: #4f5770;
+  --color-slate-700: #2b3246;
+  --color-slate-800: #191e2c;
+  --color-slate-900: #10131d;
+  --color-slate-950: #0b0d14;
+
+  --color-gray-50: #f7f8fc;
+  --color-gray-100: #f0f1f9;
+  --color-gray-200: #e8eaf2;
+  --color-gray-300: #d5d8e4;
+  --color-gray-400: #a2aac0;
+  --color-gray-500: #687189;
+  --color-gray-600: #4f5770;
+  --color-gray-700: #2b3246;
+  --color-gray-800: #191e2c;
+  --color-gray-900: #10131d;
+  --color-gray-950: #0b0d14;
+
+  /* 靛蓝（folio primary）——替换 violet / indigo / purple */
+  --color-violet-50: #eff0fc;
+  --color-violet-100: #e0e2fb;
+  --color-violet-200: #c6c9f7;
+  --color-violet-300: #a5a9f5;
+  --color-violet-400: #8c91ff;
+  --color-violet-500: #6f75ec;
+  --color-violet-600: #555ce4;
+  --color-violet-700: #454ac5;
+  --color-violet-800: #383c9e;
+  --color-violet-900: #2b3053;
+  --color-violet-950: #1d2040;
+
+  --color-indigo-50: #eff0fc;
+  --color-indigo-100: #e0e2fb;
+  --color-indigo-200: #c6c9f7;
+  --color-indigo-300: #a5a9f5;
+  --color-indigo-400: #8c91ff;
+  --color-indigo-500: #6f75ec;
+  --color-indigo-600: #555ce4;
+  --color-indigo-700: #454ac5;
+  --color-indigo-800: #383c9e;
+  --color-indigo-900: #2b3053;
+  --color-indigo-950: #1d2040;
+
+  --color-purple-50: #eff0fc;
+  --color-purple-100: #e0e2fb;
+  --color-purple-200: #c6c9f7;
+  --color-purple-300: #a5a9f5;
+  --color-purple-400: #8c91ff;
+  --color-purple-500: #6f75ec;
+  --color-purple-600: #555ce4;
+  --color-purple-700: #454ac5;
+  --color-purple-800: #383c9e;
+  --color-purple-900: #2b3053;
+  --color-purple-950: #1d2040;
+}
 
 @layer base {
-  body {
-    @apply bg-zinc-50 text-zinc-900 antialiased;
+  *,
+  ::after,
+  ::before {
+    border-color: var(--color-border);
   }
 
-  .dark body,
-  body.dark,
-  :root.dark body {
-    @apply bg-zinc-900 text-zinc-100;
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* 统一页面结构：页面头部 / 区块卡片 */
+@layer components {
+  .page {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .page-eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .page-title {
+    font-size: 30px;
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+    font-weight: 650;
+    margin: 0;
+  }
+
+  .page-subtitle {
+    margin: 7px 0 0;
+    font-size: 14px;
+    color: var(--muted-foreground);
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -40,12 +262,12 @@
 
 /* Markdown 深色模式增强 */
 .dark .prose {
-  --tw-prose-body: theme('colors.slate.300');
-  --tw-prose-headings: theme('colors.slate.100');
-  --tw-prose-links: theme('colors.violet.400');
-  --tw-prose-bold: theme('colors.slate.100');
-  --tw-prose-quotes: theme('colors.slate.400');
-  --tw-prose-code: theme('colors.violet.300');
+  --tw-prose-body: var(--color-slate-300);
+  --tw-prose-headings: var(--color-slate-100);
+  --tw-prose-links: var(--color-violet-400);
+  --tw-prose-bold: var(--color-slate-100);
+  --tw-prose-quotes: var(--color-slate-400);
+  --tw-prose-code: var(--color-violet-300);
 }
 
 /* 移除 prose 中 pre 的默认背景 */
@@ -63,11 +285,11 @@
   background: transparent;
 }
 .prose pre::-webkit-scrollbar-thumb {
-  background: theme('colors.zinc.600');
+  background: var(--color-zinc-600);
   border-radius: 3px;
 }
 .prose pre::-webkit-scrollbar-thumb:hover {
-  background: theme('colors.zinc.500');
+  background: var(--color-zinc-500);
 }
 
 /* KaTeX 数学公式样式增强 */
@@ -79,13 +301,13 @@
 .katex-display {
   margin: 1rem 0;
   padding: 0.75rem 1rem;
-  background: theme('colors.slate.50');
+  background: var(--color-slate-50);
   border-radius: 0.5rem;
   overflow-x: auto;
 }
 
 .dark .katex-display {
-  background: theme('colors.slate.800');
+  background: var(--color-slate-800);
 }
 
 /* 行内公式样式 */

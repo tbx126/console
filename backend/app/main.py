@@ -18,22 +18,6 @@ async def lifespan(_: FastAPI):
         "statistics": {}
     })
 
-    data_manager.initialize_file(settings.portfolio_data_file, {
-        "investments": [],
-        "projects": [],
-        "professional_experience": [],
-        "statistics": {}
-    })
-
-    data_manager.initialize_file(settings.finance_data_file, {
-        "expenses": [],
-        "income": [],
-        "bills": [],
-        "budgets": [],
-        "categories": [],
-        "statistics": {}
-    })
-
     data_manager.initialize_file(settings.config_data_file, {
         "currency": "USD",
         "date_format": "YYYY-MM-DD",
@@ -42,7 +26,6 @@ async def lifespan(_: FastAPI):
         "features": {
             "travel": True,
             "portfolio": True,
-            "finance": True,
             "gaming": True
         }
     })
@@ -105,24 +88,21 @@ async def root():
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint."""
-    from app.services.exchange_rate_service import exchange_rate_service
     from app.services.gaming_cache_service import gaming_cache_service
-    from app.services.price_service import price_service
+    from app.services.market_service import market_service
 
     return {
         "status": "healthy",
         "cache": {
             "data": data_manager.cache_info(),
             "gaming": gaming_cache_service.cache_info(),
-            "exchange_rates": exchange_rate_service.cache_info(),
-            "prices": price_service.cache_info(),
+            "market": market_service.cache_info(),
         },
     }
 
 
 # Import and include routers
-from app.routers import finance, travel, portfolio, ai_assistant, config, gaming, data_management
-app.include_router(finance.router, prefix="/api/finance", tags=["finance"])
+from app.routers import travel, portfolio, ai_assistant, config, gaming, data_management
 app.include_router(travel.router, prefix="/api/travel", tags=["travel"])
 app.include_router(portfolio.router, prefix="/api/portfolio", tags=["portfolio"])
 app.include_router(ai_assistant.router, prefix="/api/ai", tags=["ai"])

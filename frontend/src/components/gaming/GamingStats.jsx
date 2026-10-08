@@ -53,25 +53,25 @@ export default function GamingStats({ refresh }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard
-        title="Total Games"
+        title="游戏总数"
         value={stats?.total_games || 0}
-        description="In library"
+        description="游戏库"
         icon={Gamepad2}
       />
       <StatCard
-        title="Total Playtime"
+        title="总游玩时长"
         value={formatPlaytime(stats?.total_playtime || 0)}
-        description="All time"
+        description="全部记录"
         icon={Clock}
       />
       <StatCard
-        title="Recent Playtime"
+        title="近期游玩"
         value={formatPlaytime(stats?.recent_playtime || 0)}
-        description="Last 2 weeks"
+        description="近两周"
         icon={TrendingUp}
       />
       <StatCard
-        title="Most Played"
+        title="最常游玩"
         value={stats?.most_played_game || 'N/A'}
         description={formatPlaytime(stats?.most_played_time || 0)}
         icon={Trophy}

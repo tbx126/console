@@ -10,4 +10,4 @@ def test_health_exposes_cache_metrics():
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "healthy"
-    assert set(body["cache"]) == {"data", "gaming", "exchange_rates", "prices"}
+    assert set(body["cache"]) == {"data", "gaming", "market"}

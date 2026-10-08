@@ -1,0 +1,183 @@
+{
+  "apple": {
+    "url": "https://www.google.com/s2/favicons?domain=apple.com&sz=64",
+    "domain": "apple.com",
+    "bytes": 2468
+  },
+  "nvidia": {
+    "url": "https://www.google.com/s2/favicons?domain=nvidia.com&sz=64",
+    "domain": "nvidia.com",
+    "bytes": 1607
+  },
+  "tencent": {
+    "url": "https://www.google.com/s2/favicons?domain=tencent.com&sz=64",
+    "domain": "tencent.com",
+    "bytes": 465
+  },
+  "moutai": {
+    "error": "HTTP Error 404: Not Found"
+  },
+  "dbs": {
+    "url": "https://www.google.com/s2/favicons?domain=dbs.com&sz=64",
+    "domain": "dbs.com",
+    "bytes": 4232
+  },
+  "sbs": {
+    "url": "https://www.google.com/s2/favicons?domain=sbstransit.com.sg&sz=64",
+    "domain": "sbstransit.com.sg",
+    "bytes": 397
+  },
+  "ocbc": {
+    "url": "https://www.google.com/s2/favicons?domain=ocbc.com&sz=64",
+    "domain": "ocbc.com",
+    "bytes": 842
+  },
+  "xiaomi": {
+    "url": "https://www.google.com/s2/favicons?domain=mi.com&sz=64",
+    "domain": "mi.com",
+    "bytes": 672
+  },
+  "alphabet": {
+    "url": "https://www.google.com/s2/favicons?domain=google.com&sz=64",
+    "bytes": 1063,
+    "file": "alphabet.png"
+  },
+  "amazon": {
+    "url": "https://www.google.com/s2/favicons?domain=amazon.com&sz=64",
+    "domain": "amazon.com",
+    "bytes": 658
+  },
+  "broadcom": {
+    "url": "https://www.google.com/s2/favicons?domain=broadcom.com&sz=64",
+    "domain": "broadcom.com",
+    "bytes": 984
+  },
+  "berkshire": {
+    "error": "HTTP Error 404: Not Found"
+  },
+  "sandisk": {
+    "url": "https://www.google.com/s2/favicons?domain=sandisk.com&sz=64",
+    "domain": "sandisk.com",
+    "bytes": 498
+  },
+  "tsmc": {
+    "url": "https://www.google.com/s2/favicons?domain=tsmc.com&sz=64",
+    "domain": "tsmc.com",
+    "bytes": 263
+  },
+  "muyuan": {
+    "error": "HTTP Error 404: Not Found"
+  },
+  "cmb": {
+    "url": "https://www.google.com/s2/favicons?domain=cmbchina.com&sz=64",
+    "domain": "cmbchina.com",
+    "bytes": 1960
+  },
+  "sp500": {
+    "url": "https://www.google.com/s2/favicons?domain=spglobal.com&sz=64",
+    "domain": "spglobal.com",
+    "bytes": 226
+  },
+  "nasdaq100": {
+    "url": "https://www.google.com/s2/favicons?domain=nasdaq.com&sz=64",
+    "domain": "nasdaq.com",
+    "bytes": 1064
+  },
+  "icbc": {
+    "url": "https://www.google.com/s2/favicons?domain=icbc.com.cn&sz=64",
+    "domain": "icbc.com.cn",
+    "bytes": 1224
+  },
+  "jpmorgan": {
+    "url": "https://www.google.com/s2/favicons?domain=jpmorgan.com&sz=64",
+    "bytes": 704,
+    "file": "jpmorgan.png"
+  },
+  "guangfa": {
+    "url": "https://www.google.com/s2/favicons?domain=gffunds.com.cn&sz=64",
+    "domain": "gffunds.com.cn",
+    "bytes": 695
+  },
+  "zhaoshang": {
+    "url": "https://www.google.com/s2/favicons?domain=cmfchina.com&sz=64",
+    "domain": "cmfchina.com",
+    "bytes": 3817
+  },
+  "huaan": {
+    "url": "https://www.google.com/s2/favicons?domain=huaan.com.cn&sz=64",
+    "domain": "huaan.com.cn",
+    "bytes": 330
+  },
+  "nanfang": {
+    "url": "https://www.google.com/s2/favicons?domain=nffund.com&sz=64",
+    "domain": "nffund.com",
+    "bytes": 462
+  },
+  "jianxin": {
+    "error": "HTTP Error 404: Not Found"
+  },
+  "huitianfu": {
+    "url": "https://www.google.com/s2/favicons?domain=99fund.com&sz=64",
+    "domain": "99fund.com",
+    "bytes": 272
+  },
+  "baoying": {
+    "error": "HTTP Error 404: Not Found"
+  },
+  "wanjia": {
+    "url": "https://www.wjasset.com/favicon.ico",
+    "bytes": 1150,
+    "file": "wanjia.ico"
+  },
+  "huatai": {
+    "url": "https://www.huatai-pb.com/favicon.ico",
+    "bytes": 4286,
+    "file": "huatai.ico"
+  },
+  "dacheng": {
+    "error": "HTTP Error 404: Not Found"
+  },
+  "xingquan": {
+    "error": "HTTP Error 404: Not Found"
+  },
+  "btc": {
+    "url": "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png",
+    "domain": null,
+    "bytes": 2589
+  },
+  "eth": {
+    "url": "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png",
+    "bytes": 3437,
+    "file": "eth.png"
+  },
+  "sol": {
+    "url": "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png",
+    "domain": null,
+    "bytes": 4222
+  },
+  "doge": {
+    "url": "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/doge.png",
+    "domain": null,
+    "bytes": 1597
+  },
+  "aave": {
+    "url": "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/aave.png",
+    "domain": null,
+    "bytes": 5111
+  },
+  "bnb": {
+    "url": "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png",
+    "domain": null,
+    "bytes": 1494
+  },
+  "usdt": {
+    "url": "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/usdt.png",
+    "domain": null,
+    "bytes": 2113
+  },
+  "ar": {
+    "url": "https://www.google.com/s2/favicons?domain=arweave.org&sz=64",
+    "bytes": 727,
+    "file": "ar.png"
+  }
+}

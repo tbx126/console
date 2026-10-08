@@ -12,10 +12,10 @@ export default function FlightToolbar({
   onViewModeChange
 }) {
   const sortOptions = [
-    { value: 'date-desc', label: 'Date (Newest)' },
-    { value: 'date-asc', label: 'Date (Oldest)' },
-    { value: 'airline-asc', label: 'Airline (A-Z)' },
-    { value: 'airline-desc', label: 'Airline (Z-A)' }
+    { value: 'date-desc', label: '日期（最新）' },
+    { value: 'date-asc', label: '日期（最早）' },
+    { value: 'airline-asc', label: '航司（A-Z）' },
+    { value: 'airline-desc', label: '航司（Z-A）' }
   ];
 
   return (
@@ -26,7 +26,7 @@ export default function FlightToolbar({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
           <Input
             type="text"
-            placeholder="Search airline or route..."
+            placeholder="搜索航司或航线…"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-10"
